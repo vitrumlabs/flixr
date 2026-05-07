@@ -76,6 +76,7 @@ struct PosterPlate: View {
 struct ScreenShell<Content: View>: View {
     var backdrop = true
     var dim: Double = 0.6
+    var midDim: Double? = nil  // mid-gradient opacity; defaults to 0.86 for other screens
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -85,7 +86,7 @@ struct ScreenShell<Content: View>: View {
             LinearGradient(
                 stops: [
                     .init(color: .black.opacity(dim), location: 0),
-                    .init(color: .black.opacity(0.86), location: 0.6),
+                    .init(color: .black.opacity(midDim ?? 0.86), location: 0.6),
                     .init(color: .black, location: 1)
                 ],
                 startPoint: .top, endPoint: .bottom

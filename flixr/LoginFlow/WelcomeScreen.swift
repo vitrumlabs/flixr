@@ -4,7 +4,7 @@ struct WelcomeScreen: View {
     var go: (LoginScreen) -> Void
 
     var body: some View {
-        ScreenShell(dim: 0.5) {
+        ScreenShell(dim: 0.3, midDim: 0.55) {
             GeometryReader { geo in
                 VStack(alignment: .leading, spacing: 0) {
                     // Top bar
@@ -115,7 +115,7 @@ struct WelcomeScreen: View {
                                 .lineSpacing(2)
                         }
                         .frame(maxWidth: 180, alignment: .leading)
-                        .padding(.bottom, geo.safeAreaInsets.bottom + 16)
+                        .padding(.bottom, geo.safeAreaInsets.bottom + 80)
                     }
                     .frame(maxWidth: .infinity)
                 }
