@@ -72,6 +72,9 @@ struct WelcomeScreen: View {
                     .buttonStyle(ScaleButtonStyle(scale: 0.97))
                     .padding(.bottom, 28)
 
+                    // Push badges toward vertical center of remaining space
+                    Spacer(minLength: 20)
+
                     // Feature badges row with vertical dividers
                     HStack(alignment: .top, spacing: 0) {
                         FeatureBadge(icon: "heart",    title: "Personalized",  caption: "Recommendations\njust for you.")
@@ -109,13 +112,12 @@ struct WelcomeScreen: View {
                                 .lineSpacing(2)
                         }
                         .frame(maxWidth: 180, alignment: .leading)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 20)
                     }
                     .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 16)
-                .padding(.bottom, 36)
                 .frame(width: geo.size.width, height: geo.size.height)
             }
         }
