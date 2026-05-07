@@ -40,13 +40,15 @@ struct WelcomeScreen: View {
                     }
                     .padding(.bottom, 12)
 
+                    // Constrained width forces text to wrap like the design
                     Text("Swipe, discover, and build your perfect watchlist.")
                         .font(.system(size: 16))
                         .foregroundColor(.fg2)
                         .lineSpacing(2)
+                        .frame(maxWidth: geo.size.width * 0.60, alignment: .leading)
                         .padding(.bottom, 18)
 
-                    // Get Started — left-aligned pill, ~52% width
+                    // Get Started — left-aligned pill
                     Button(action: { go(.signup) }) {
                         HStack(spacing: 14) {
                             Text("Get Started")
@@ -88,6 +90,7 @@ struct WelcomeScreen: View {
                     Spacer(minLength: 8)
 
                     // Footer: blurb text (left) + popcorn (bottom-right, overflows edge)
+                    // padding(.bottom) accounts for home indicator zone so text stays visible
                     ZStack(alignment: .bottomLeading) {
                         Image("FlixrPopcorn")
                             .resizable()
@@ -112,7 +115,7 @@ struct WelcomeScreen: View {
                                 .lineSpacing(2)
                         }
                         .frame(maxWidth: 180, alignment: .leading)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, geo.safeAreaInsets.bottom + 16)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -120,6 +123,7 @@ struct WelcomeScreen: View {
                 .padding(.top, 16)
                 .frame(width: geo.size.width, height: geo.size.height)
             }
+            .ignoresSafeArea(edges: .bottom)
         }
     }
 }
