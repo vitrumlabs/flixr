@@ -111,7 +111,7 @@ struct WelcomeScreen: View {
                                 .lineSpacing(2)
                         }
                         .frame(maxWidth: 200, alignment: .leading)
-                        .padding(.bottom, geo.safeAreaInsets.bottom + 110)
+                        .padding(.bottom, geo.safeAreaInsets.bottom + 48)
                     }
                     .frame(maxWidth: .infinity)
                 }
