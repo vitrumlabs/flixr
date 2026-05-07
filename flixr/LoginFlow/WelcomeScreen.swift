@@ -79,11 +79,11 @@ struct WelcomeScreen: View {
 
                     // Feature badges row with vertical dividers
                     HStack(alignment: .top, spacing: 0) {
-                        FeatureBadge(icon: "heart",    title: "Personalized",  caption: "Recommendations\njust for you.")
+                        FeatureBadge(icon: "heart.fill",    title: "Personalized",  caption: "Recommendations\njust for you.")
                         Color.white.opacity(0.18).frame(width: 1, height: 80)
-                        FeatureBadge(icon: "bolt",     title: "Quick & Easy",  caption: "Swipe to find your\nnext favorite.")
+                        FeatureBadge(icon: "bolt.fill",     title: "Quick & Easy",  caption: "Swipe to find your\nnext favorite.")
                         Color.white.opacity(0.18).frame(width: 1, height: 80)
-                        FeatureBadge(icon: "bookmark", title: "Your Watchlist", caption: "Save and organize\nwhat you love.")
+                        FeatureBadge(icon: "bookmark.fill", title: "Your Watchlist", caption: "Save and organize\nwhat you love.")
                     }
 
                     // Flexible space — pushes footer to bottom
@@ -139,15 +139,11 @@ private struct FeatureBadge: View {
         VStack(spacing: 8) {
             ZStack {
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [Color.flxRed.opacity(0.20), Color.flxRed.opacity(0.03), .clear],
-                            center: .center, startRadius: 0, endRadius: 22
-                        )
-                    )
+                    .fill(Color(white: 0.10))
                     .frame(width: 44, height: 44)
+                    .overlay(Circle().strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
                 Image(systemName: icon)
-                    .font(.system(size: 17, weight: .regular))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.flxRed)
             }
             Text(title)
