@@ -96,13 +96,8 @@ struct WelcomeScreen: View {
                             .padding(.trailing, -22)
                             .overlay(
                                 LinearGradient(
-                                    stops: [
-                                        .init(color: .black.opacity(0.92), location: 0),
-                                        .init(color: .black.opacity(0.75), location: 0.30),
-                                        .init(color: .black.opacity(0.30), location: 0.60),
-                                        .init(color: .clear,               location: 0.85),
-                                    ],
-                                    startPoint: .leading, endPoint: .trailing
+                                    colors: [.black, .black.opacity(0.55), .clear],
+                                    startPoint: .leading, endPoint: UnitPoint(x: 0.4, y: 0)
                                 )
                             )
 
@@ -115,16 +110,7 @@ struct WelcomeScreen: View {
                                 .foregroundColor(.fg3)
                                 .lineSpacing(2)
                         }
-                        // Wider container so text visually merges with popcorn scene
-                        .frame(maxWidth: 230, alignment: .leading)
-                        // Fade the right edge of the text block into the popcorn
-                        .mask(
-                            LinearGradient(
-                                colors: [.white, .white, .clear],
-                                startPoint: .leading,
-                                endPoint: UnitPoint(x: 0.85, y: 0)
-                            )
-                        )
+                        .frame(maxWidth: 200, alignment: .leading)
                         .padding(.bottom, geo.safeAreaInsets.bottom + 110)
                     }
                     .frame(maxWidth: .infinity)
