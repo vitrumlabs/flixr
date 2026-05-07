@@ -77,11 +77,11 @@ struct WelcomeScreen: View {
 
                     // Feature badges row with vertical dividers
                     HStack(alignment: .top, spacing: 0) {
-                        FeatureBadge(icon: "heart.fill",    title: "Personalized",  caption: "Recommendations\njust for you.")
+                        FeatureBadge(icon: "heart",    title: "Personalized",  caption: "Recommendations\njust for you.")
                         Color.white.opacity(0.18).frame(width: 1, height: 96)
-                        FeatureBadge(icon: "bolt.fill",     title: "Quick & Easy",  caption: "Swipe to find your\nnext favorite.")
+                        FeatureBadge(icon: "bolt",     title: "Quick & Easy",  caption: "Swipe to find your\nnext favorite.")
                         Color.white.opacity(0.18).frame(width: 1, height: 96)
-                        FeatureBadge(icon: "bookmark.fill", title: "Your Watchlist", caption: "Save and organize\nwhat you love.")
+                        FeatureBadge(icon: "bookmark", title: "Your Watchlist", caption: "Save and organize\nwhat you love.")
                     }
 
                     Spacer(minLength: 8)
