@@ -9,7 +9,7 @@ struct WelcomeScreen: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Top bar
                     HStack {
-                        FlxLogo(size: 26)
+                        FlxLogo(size: 34)
                         Spacer()
                         Button("Sign In") { go(.signin) }
                             .font(.system(size: 15, weight: .semibold))
@@ -40,7 +40,6 @@ struct WelcomeScreen: View {
                     }
                     .padding(.bottom, 14)
 
-                    // Constrained width forces text to wrap like the design
                     Text("Swipe, discover, and build your perfect watchlist.")
                         .font(.system(size: 18))
                         .foregroundColor(.fg2)
@@ -61,7 +60,7 @@ struct WelcomeScreen: View {
                         .foregroundColor(.white)
                         .padding(.vertical, 16)
                         .padding(.horizontal, 24)
-                        .frame(width: geo.size.width * 0.60)
+                        .frame(width: geo.size.width * 0.55)
                         .background(
                             LinearGradient(
                                 colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
@@ -74,7 +73,6 @@ struct WelcomeScreen: View {
                     .buttonStyle(ScaleButtonStyle(scale: 0.97))
                     .padding(.bottom, 28)
 
-                    // Push badges toward vertical center of remaining space
                     Spacer(minLength: 36)
 
                     // Feature badges row with vertical dividers
@@ -86,10 +84,9 @@ struct WelcomeScreen: View {
                         FeatureBadge(icon: "bookmark.fill", title: "Your Watchlist", caption: "Save and organize\nwhat you love.")
                     }
 
-                    // Flexible space — pushes footer to bottom
                     Spacer(minLength: 8)
 
-                    // Footer: blurb text (left) + popcorn (bottom-right, overflows edge)
+                    // Footer: text blends into popcorn via multi-stop gradient overlay
                     ZStack(alignment: .bottomLeading) {
                         Image("FlixrPopcorn")
                             .resizable()
@@ -99,8 +96,13 @@ struct WelcomeScreen: View {
                             .padding(.trailing, -22)
                             .overlay(
                                 LinearGradient(
-                                    colors: [.black, .black.opacity(0.55), .clear],
-                                    startPoint: .leading, endPoint: UnitPoint(x: 0.4, y: 0)
+                                    stops: [
+                                        .init(color: .black.opacity(0.92), location: 0),
+                                        .init(color: .black.opacity(0.75), location: 0.30),
+                                        .init(color: .black.opacity(0.30), location: 0.60),
+                                        .init(color: .clear,               location: 0.85),
+                                    ],
+                                    startPoint: .leading, endPoint: .trailing
                                 )
                             )
 
@@ -113,7 +115,16 @@ struct WelcomeScreen: View {
                                 .foregroundColor(.fg3)
                                 .lineSpacing(2)
                         }
-                        .frame(maxWidth: 200, alignment: .leading)
+                        // Wider container so text visually merges with popcorn scene
+                        .frame(maxWidth: 230, alignment: .leading)
+                        // Fade the right edge of the text block into the popcorn
+                        .mask(
+                            LinearGradient(
+                                colors: [.white, .white, .clear],
+                                startPoint: .leading,
+                                endPoint: UnitPoint(x: 0.85, y: 0)
+                            )
+                        )
                         .padding(.bottom, geo.safeAreaInsets.bottom + 110)
                     }
                     .frame(maxWidth: .infinity)
@@ -137,10 +148,18 @@ private struct FeatureBadge: View {
     var body: some View {
         VStack(spacing: 10) {
             ZStack {
+                // Reddish haze background
                 Circle()
-                    .fill(Color(white: 0.10))
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.flxRed.opacity(0.32), Color.flxRed.opacity(0.12), .clear],
+                            center: .center,
+                            startRadius: 4,
+                            endRadius: 28
+                        )
+                    )
                     .frame(width: 56, height: 56)
-                    .overlay(Circle().strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5))
+                    .overlay(Circle().strokeBorder(Color.flxRed.opacity(0.22), lineWidth: 1))
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.flxRed)
