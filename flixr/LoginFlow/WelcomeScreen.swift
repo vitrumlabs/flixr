@@ -73,19 +73,19 @@ struct WelcomeScreen: View {
                     .padding(.bottom, 28)
 
                     // Feature badges row with vertical dividers
-                    HStack(spacing: 0) {
-                        FeatureBadge(icon: "heart",    title: "Personalized", caption: "Picks just\nfor you.")
-                        Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1).padding(.vertical, 6)
-                        FeatureBadge(icon: "bolt",     title: "Quick & Easy",  caption: "Swipe to find\nyour next fave.")
-                        Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1).padding(.vertical, 6)
-                        FeatureBadge(icon: "bookmark", title: "Watchlist",     caption: "Save what\nyou love.")
+                    HStack(alignment: .top, spacing: 0) {
+                        FeatureBadge(icon: "heart",    title: "Personalized",  caption: "Recommendations\njust for you.")
+                        Color.white.opacity(0.18).frame(width: 1, height: 80)
+                        FeatureBadge(icon: "bolt",     title: "Quick & Easy",  caption: "Swipe to find your\nnext favorite.")
+                        Color.white.opacity(0.18).frame(width: 1, height: 80)
+                        FeatureBadge(icon: "bookmark", title: "Your Watchlist", caption: "Save and organize\nwhat you love.")
                     }
 
                     // Flexible space — pushes footer to bottom
                     Spacer(minLength: 8)
 
                     // Footer: blurb text (left) + popcorn (bottom-right, overflows edge)
-                    ZStack(alignment: .bottom) {
+                    ZStack(alignment: .bottomLeading) {
                         Image("FlixrPopcorn")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
@@ -103,14 +103,15 @@ struct WelcomeScreen: View {
                             Text("Ready to dive in?")
                                 .font(.flxDisplay(20))
                                 .foregroundColor(.white)
-                            Text("Join millions of movie lovers.")
+                            Text("Join millions of movie lovers\nand start your journey today.")
                                 .font(.system(size: 13))
                                 .foregroundColor(.fg3)
+                                .lineSpacing(2)
                         }
                         .frame(maxWidth: 180, alignment: .leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.bottom, 72)
+                        .padding(.bottom, 8)
                     }
+                    .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 16)
