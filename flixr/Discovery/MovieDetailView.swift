@@ -6,168 +6,220 @@ struct MovieDetailView: View {
     var movie: Movie
     var onClose: () -> Void
 
+    @Environment(UserLibrary.self) private var library
+    @State private var detail: Movie? = nil
+    @State private var isFetching = false
+
+    private var displayed: Movie { detail ?? movie }
+    private let heroHeight: CGFloat = 260
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Hero backdrop
-                    ZStack(alignment: .bottom) {
-                        BackdropArt(movie: movie, aspectRatio: 16 / 10)
-                            .frame(maxWidth: .infinity)
-
-                        // Gradient overlay
-                        LinearGradient(
-                            stops: [
-                                .init(color: .black.opacity(0.35), location: 0),
-                                .init(color: .clear, location: 0.35),
-                                .init(color: .clear, location: 0.6),
-                                .init(color: .black.opacity(0.95), location: 1),
-                            ],
-                            startPoint: .top, endPoint: .bottom
-                        )
-
-                        // Play button
-                        Button(action: {}) {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(.white)
-                                .frame(width: 64, height: 64)
-                        }
-                        .glassEffect(in: Circle())
-                        .frame(maxHeight: .infinity)
-
-                        // Back button (top-left)
-                        Button(action: onClose) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 40, height: 40)
-                        }
-                        .glassEffect(in: Circle())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .padding(.top, 52)
-                        .padding(.leading, 16)
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    // Content
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Title
-                        Text(movie.title)
-                            .font(.flxDisplay(34))
-                            .tracking(-0.5)
-                            .foregroundColor(.white)
-                            .padding(.top, 14)
-
-                        // Meta row
-                        HStack(spacing: 0) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color(hex: "FFD700"))
-                                Text(String(format: "%.1f", movie.rating))
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(Color(hex: "FFD700"))
-                            }
-                            DotSep()
-                            Text(String(movie.year))
-                                .foregroundColor(Color.dFg2)
-                            DotSep()
-                            Text(movie.runtime)
-                                .foregroundColor(Color.dFg2)
-                            DotSep()
-                            Text(movie.genre)
-                                .foregroundColor(Color.dFg2)
-                        }
-                        .font(.system(size: 14))
-                        .padding(.top, 8)
-
-                        // Synopsis
-                        Text(movie.synopsis)
-                            .font(.system(size: 15))
-                            .foregroundColor(Color.dFg2)
-                            .lineSpacing(3)
-                            .padding(.top, 16)
-
-                        // Action buttons
-                        HStack(spacing: 10) {
-                            Button(action: {}) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "play.fill")
-                                        .font(.system(size: 14))
-                                    Text("Watch trailer")
-                                        .font(.system(size: 15, weight: .semibold))
-                                }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 13)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
-                                        startPoint: .top, endPoint: .bottom
-                                    )
-                                )
-                                .clipShape(Capsule())
-                            }
-                            .buttonStyle(ScaleButtonStyle(scale: 0.97))
-
-                            Button(action: {}) {
-                                Image(systemName: "bookmark")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.white)
-                                    .frame(width: 52, height: 48)
-                                    .background(Color.white.opacity(0.05))
-                                    .clipShape(Capsule())
-                                    .overlay(Capsule().strokeBorder(Color.dLine, lineWidth: 1))
-                            }
-                        }
-                        .padding(.top, 22)
-
-                        // Director / Studio / Language grid
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                            InfoTile(key: "Director", value: movie.director)
-                            InfoTile(key: "Studio", value: movie.studio)
-                            InfoTile(key: "Language", value: movie.language)
-                        }
-                        .padding(.top, 26)
-
-                        // Cast
-                        VStack(alignment: .leading, spacing: 10) {
-                            sectionLabel("Cast")
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(Array(movie.cast.enumerated()), id: \.element) { i, name in
-                                        CastAvatar(name: name, index: i)
-                                    }
-                                }
-                                .padding(.horizontal, 1)
-                            }
-                        }
-                        .padding(.top, 26)
-
-                        // Available on
-                        VStack(alignment: .leading, spacing: 10) {
-                            sectionLabel("Available on")
-                            FlexPlatforms(platforms: movie.platforms)
-                        }
-                        .padding(.top, 22)
-
-                        // Release / Rated
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                            InfoTile(key: "Release", value: movie.releaseDate)
-                            InfoTile(key: "Rated", value: movie.cert)
-                        }
-                        .padding(.top, 22)
-                        .padding(.bottom, 40)
-                    }
-                    .padding(.horizontal, 20)
+                    heroSection
+                    contentSection
                 }
             }
             .ignoresSafeArea(edges: .top)
         }
         .preferredColorScheme(.dark)
+        .task {
+            guard let id = Int(movie.id) else { return }
+            isFetching = true
+            detail = try? await MovieService.shared.fetchDetails(id: id)
+            isFetching = false
+        }
+    }
+
+    // MARK: - Hero
+
+    private var heroSection: some View {
+        ZStack(alignment: .bottom) {
+            BackdropArt(movie: displayed, aspectRatio: 16 / 9)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0.35), location: 0),
+                    .init(color: .clear, location: 0.3),
+                    .init(color: .clear, location: 0.55),
+                    .init(color: .black.opacity(0.9), location: 1),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+
+            Button(action: {}) {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(.white)
+                    .frame(width: 56, height: 56)
+            }
+            .glassEffect(in: Circle())
+            .frame(maxHeight: .infinity)
+
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: heroHeight)
+        .clipped()
+        .overlay(alignment: .topLeading) {
+            Button(action: onClose) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 40, height: 40)
+            }
+            .glassEffect(in: Circle())
+            .padding(.top, 52)
+            .padding(.leading, 16)
+        }
+    }
+
+    // MARK: - Content
+
+    private var contentSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(displayed.title)
+                .font(.flxDisplay(32))
+                .tracking(-0.5)
+                .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 14)
+
+            metaRow.padding(.top, 8)
+
+            Text(displayed.synopsis)
+                .font(.system(size: 15))
+                .foregroundColor(Color.dFg2)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 14)
+
+            actionButtons.padding(.top, 20)
+
+            infoGrid.padding(.top, 24)
+
+            if isFetching || !displayed.cast.isEmpty {
+                castSection.padding(.top, 24)
+            }
+
+            if !displayed.platforms.isEmpty {
+                platformSection.padding(.top, 20)
+            }
+
+            releaseGrid.padding(.top, 20).padding(.bottom, 40)
+        }
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Sub-sections
+
+    private var metaRow: some View {
+        let parts: [String] = [
+            String(displayed.year),
+            displayed.runtime,
+            displayed.genre,
+        ].filter { !$0.isEmpty && $0 != "0" }
+
+        return HStack(spacing: 0) {
+            HStack(spacing: 4) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "FFD700"))
+                Text(String(format: "%.1f", displayed.rating))
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color(hex: "FFD700"))
+            }
+            ForEach(parts, id: \.self) { part in
+                DotSep()
+                Text(part).foregroundColor(Color.dFg2)
+            }
+        }
+        .font(.system(size: 13))
+    }
+
+    private var actionButtons: some View {
+        let inWatchlist = library.watchlistIds.contains(displayed.id)
+        return HStack(spacing: 10) {
+            Button(action: {}) {
+                HStack(spacing: 8) {
+                    Image(systemName: "play.fill").font(.system(size: 14))
+                    Text("Watch trailer").font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background(LinearGradient(
+                    colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
+                    startPoint: .top, endPoint: .bottom))
+                .clipShape(Capsule())
+            }
+            .buttonStyle(ScaleButtonStyle(scale: 0.97))
+
+            Button(action: {
+                Task {
+                    if inWatchlist { await library.removeFromWatchlist(displayed) }
+                    else           { await library.addToWatchlist(displayed) }
+                }
+            }) {
+                Image(systemName: inWatchlist ? "bookmark.fill" : "bookmark")
+                    .font(.system(size: 18))
+                    .foregroundColor(inWatchlist ? .flxRed : .white)
+                    .frame(width: 52, height: 48)
+                    .background(Color.white.opacity(0.05))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().strokeBorder(Color.dLine, lineWidth: 1))
+            }
+        }
+    }
+
+    private var infoGrid: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
+            spacing: 10
+        ) {
+            InfoTile(key: "Director",  value: displayed.director,  isLoading: isFetching)
+            InfoTile(key: "Studio",    value: displayed.studio,    isLoading: isFetching)
+            InfoTile(key: "Language",  value: displayed.language,  isLoading: false)
+        }
+    }
+
+    private var castSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionLabel("Cast")
+            if isFetching {
+                ProgressView().tint(.white)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(Array(displayed.cast.enumerated()), id: \.offset) { i, member in
+                            CastAvatar(member: member, index: i)
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+            }
+        }
+    }
+
+    private var platformSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionLabel("Available on")
+            FlexPlatforms(platforms: displayed.platforms)
+        }
+    }
+
+    private var releaseGrid: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+            spacing: 10
+        ) {
+            InfoTile(key: "Release", value: displayed.releaseDate, isLoading: false)
+            InfoTile(key: "Rated",   value: displayed.cert,        isLoading: false)
+        }
     }
 
     private func sectionLabel(_ text: String) -> some View {
@@ -184,6 +236,7 @@ struct MovieDetailView: View {
 private struct InfoTile: View {
     var key: String
     var value: String
+    var isLoading: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -192,10 +245,14 @@ private struct InfoTile: View {
                 .tracking(0.8)
                 .textCase(.uppercase)
                 .foregroundColor(Color.dFg3)
-            Text(value)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
-                .lineLimit(2)
+            if isLoading {
+                Capsule().fill(Color.white.opacity(0.1)).frame(height: 14)
+            } else {
+                Text(value.isEmpty ? "—" : value)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(value.isEmpty ? Color.dFg3 : .white)
+                    .lineLimit(2)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -209,7 +266,7 @@ private struct InfoTile: View {
 // MARK: - Cast avatar
 
 private struct CastAvatar: View {
-    var name: String
+    var member: CastMember
     var index: Int
 
     private let palettes: [(Color, Color)] = [
@@ -222,33 +279,32 @@ private struct CastAvatar: View {
     ]
 
     private var initials: String {
-        name.split(separator: " ").prefix(2).compactMap { $0.first.map { String($0) } }.joined()
+        member.name.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined()
     }
-
-    private var firstName: String { name.components(separatedBy: " ").first ?? name }
-    private var lastName: String { name.components(separatedBy: " ").dropFirst().joined(separator: " ") }
+    private var firstName: String { member.name.components(separatedBy: " ").first ?? member.name }
+    private var lastName: String  { member.name.components(separatedBy: " ").dropFirst().joined(separator: " ") }
 
     var body: some View {
         let pal = palettes[index % palettes.count]
         VStack(spacing: 6) {
             ZStack {
-                Circle()
-                    .fill(LinearGradient(colors: [pal.0, pal.1], startPoint: .topLeading, endPoint: .bottomTrailing))
-                Circle()
-                    .strokeBorder(Color.dLine, lineWidth: 1)
-                Text(initials)
-                    .font(.flxDisplay(18))
-                    .foregroundColor(.white)
+                Circle().fill(LinearGradient(colors: [pal.0, pal.1], startPoint: .topLeading, endPoint: .bottomTrailing))
+                if let path = member.profilePath, let url = TMDBImage.profileURL(path) {
+                    AsyncImage(url: url) { phase in
+                        if case .success(let image) = phase {
+                            image.resizable().scaledToFill()
+                        }
+                    }
+                    .clipShape(Circle())
+                } else {
+                    Text(initials).font(.flxDisplay(18)).foregroundColor(.white)
+                }
+                Circle().strokeBorder(Color.dLine, lineWidth: 1)
             }
             .frame(width: 64, height: 64)
-
             VStack(spacing: 1) {
-                Text(firstName)
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .foregroundColor(.white)
-                Text(lastName)
-                    .font(.system(size: 10.5))
-                    .foregroundColor(Color.dFg3)
+                Text(firstName).font(.system(size: 11.5, weight: .semibold)).foregroundColor(.white)
+                Text(lastName).font(.system(size: 10.5)).foregroundColor(Color.dFg3)
             }
             .multilineTextAlignment(.center)
             .lineLimit(1)
@@ -270,18 +326,12 @@ private struct FlexPlatforms: View {
                         RoundedRectangle(cornerRadius: 6)
                             .fill(LinearGradient(colors: [Color(hex: "2a2a2e"), Color(hex: "0e0e10")], startPoint: .topLeading, endPoint: .bottomTrailing))
                             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.dLine, lineWidth: 1))
-                        Text(String(p.prefix(1)))
-                            .font(.flxDisplay(11))
-                            .foregroundColor(.white)
+                        Text(String(p.prefix(1))).font(.flxDisplay(11)).foregroundColor(.white)
                     }
                     .frame(width: 22, height: 22)
-
-                    Text(p)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
+                    Text(p).font(.system(size: 13, weight: .semibold)).foregroundColor(.white)
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
+                .padding(.vertical, 8).padding(.horizontal, 12)
                 .background(Color.white.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.dLine, lineWidth: 1))

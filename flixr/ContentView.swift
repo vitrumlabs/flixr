@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(UserLibrary.self) private var library
 
     var body: some View {
         ZStack {
@@ -18,6 +19,9 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.35), value: auth.isSigningOut)
         .animation(.easeInOut(duration: 0.35), value: auth.user == nil)
+        .task(id: auth.uid) {
+            if auth.uid != nil { await library.load() }
+        }
     }
 }
 

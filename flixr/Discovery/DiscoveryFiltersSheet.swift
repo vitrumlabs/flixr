@@ -7,12 +7,12 @@ struct DiscoveryFiltersSheet: View {
 
     @State private var selectedGenres: Set<String> = ["Drama", "Sci-Fi"]
     @State private var selectedDecade = "2020s"
-    @State private var selectedMood = "Cinematic"
+    @State private var selectedSort = "Popular"
     @State private var minRating: Double = 0.62
 
-    private let genres  = ["Drama", "Sci-Fi", "Thriller", "Horror", "Comedy", "Romance", "Action", "Western", "Documentary"]
-    private let decades = ["2020s", "2010s", "2000s", "90s", "80s", "Older"]
-    private let moods   = ["Cinematic", "Feel-good", "Edge-of-seat", "Heartbreak", "Mind-bender", "Cozy"]
+    private let genres     = ["Drama", "Sci-Fi", "Thriller", "Horror", "Comedy", "Romance", "Action", "Western", "Documentary"]
+    private let decades    = ["2020s", "2010s", "2000s", "90s", "80s", "Older"]
+    private let sortLabels = ["Popular", "Top Rated", "Newest", "Blockbusters"]
 
     var body: some View {
         ZStack {
@@ -69,10 +69,10 @@ struct DiscoveryFiltersSheet: View {
                                 }
                             }
 
-                            FilterSection(title: "Mood") {
-                                FlexChips(items: moods) { mood in
-                                    FilterChip(label: mood, isActive: mood == selectedMood) {
-                                        selectedMood = mood
+                            FilterSection(title: "Sort by") {
+                                FlexChips(items: sortLabels) { label in
+                                    FilterChip(label: label, isActive: label == selectedSort) {
+                                        selectedSort = label
                                     }
                                 }
                             }

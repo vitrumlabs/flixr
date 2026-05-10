@@ -6,23 +6,15 @@ struct DiscoverySearchView: View {
     var onClose: () -> Void
     var onOpenDetail: (Movie) -> Void
 
-    @State private var query = "Atlas"
+    @State private var query = ""
     @State private var scope = "All"
+    @State private var results: [Movie] = []
+    @State private var isSearching = false
     @FocusState private var isSearchFocused: Bool
 
     private let scopes = ["All", "Movies", "Cast", "Genres", "Lists"]
     private let recents = ["Sci-Fi 2024", "Christopher Nolan", "Coast Road", "Indie horror", "A24"]
     private let trending = ["Cozy thrillers", "Heist films", "Awards season", "Korean cinema", "Slow burns"]
-
-    private var results: [Movie] {
-        let q = query.lowercased().trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty else { return [] }
-        return movieCatalog.filter {
-            $0.title.lowercased().contains(q)
-            || $0.genre.lowercased().contains(q)
-            || $0.cast.contains { $0.lowercased().contains(q) }
-        }
-    }
 
     private var hasQuery: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -69,11 +61,18 @@ struct DiscoverySearchView: View {
                         emptyStateContent
                     }
                 }
-
             }
         }
         .onAppear { isSearchFocused = true }
         .preferredColorScheme(.dark)
+        .task(id: query) {
+            guard hasQuery else { results = []; return }
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            isSearching = true
+            results = (try? await MovieService.shared.search(query: query)) ?? []
+            isSearching = false
+        }
     }
 
     // MARK: Empty state
@@ -176,72 +175,71 @@ struct DiscoverySearchView: View {
 
     private var resultsContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("\(results.count) results for \"\(query)\"")
-                .font(.system(size: 12, weight: .bold))
-                .tracking(1.2)
-                .textCase(.uppercase)
-                .foregroundColor(Color.dFg3)
-                .padding(.horizontal, 20)
-                .padding(.top, 14)
-                .padding(.bottom, 8)
+            if isSearching {
+                ProgressView()
+                    .tint(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 40)
+            } else {
+                Text("\(results.count) results for \"\(query)\"")
+                    .font(.system(size: 12, weight: .bold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundColor(Color.dFg3)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+                    .padding(.bottom, 8)
 
-            // Top result hero
-            if let topMovie = results.first {
-                Button(action: { onOpenDetail(topMovie) }) {
-                    ZStack(alignment: .bottomLeading) {
-                        BackdropArt(movie: topMovie)
-                            .aspectRatio(16 / 9, contentMode: .fit)
+                // Top result hero
+                if let topMovie = results.first {
+                    Button(action: { onOpenDetail(topMovie) }) {
+                        ZStack(alignment: .bottomLeading) {
+                            BackdropArt(movie: topMovie)
+                                .aspectRatio(16 / 9, contentMode: .fit)
 
-                        LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: UnitPoint(x: 0.5, y: 0.3), endPoint: .bottom)
+                            LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: UnitPoint(x: 0.5, y: 0.3), endPoint: .bottom)
 
-                        HStack(alignment: .bottom, spacing: 12) {
-                            PosterArt(movie: topMovie, width: 56)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Top result")
-                                    .font(.system(size: 10.5, weight: .bold))
-                                    .tracking(1.6)
-                                    .textCase(.uppercase)
-                                    .foregroundColor(.flxRed)
-                                Text(topMovie.title)
-                                    .font(.flxDisplay(20))
-                                    .foregroundColor(.white)
-                                Text("\(topMovie.year) · \(topMovie.runtime) · \(topMovie.genre)")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(Color.dFg2)
+                            HStack(alignment: .bottom, spacing: 12) {
+                                PosterArt(movie: topMovie, width: 56)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Top result")
+                                        .font(.system(size: 10.5, weight: .bold))
+                                        .tracking(1.6)
+                                        .textCase(.uppercase)
+                                        .foregroundColor(.flxRed)
+                                    Text(topMovie.title)
+                                        .font(.flxDisplay(20))
+                                        .foregroundColor(.white)
+                                    Text([String(topMovie.year), topMovie.runtime, topMovie.genre]
+                                        .filter { !$0.isEmpty }
+                                        .joined(separator: " · "))
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color.dFg2)
+                                }
+                                Spacer()
+                                HStack(spacing: 4) {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(Color(hex: "FFD700"))
+                                    Text(String(format: "%.1f", topMovie.rating))
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(Color(hex: "FFD700"))
+                                }
                             }
-                            Spacer()
-                            HStack(spacing: 4) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(Color(hex: "FFD700"))
-                                Text(String(format: "%.1f", topMovie.rating))
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(Color(hex: "FFD700"))
-                            }
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 12)
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 12)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
+                        .shadow(color: .black.opacity(0.55), radius: 18, y: 9)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
-                    .shadow(color: .black.opacity(0.55), radius: 18, y: 9)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 16)
-            }
 
-            // More list
-            if results.count > 1 || results.isEmpty {
-                let moreMovies: [Movie] = {
-                    var list = results.dropFirst().prefix(5).map { $0 }
-                    if list.isEmpty {
-                        list = Array(movieCatalog.filter { !results.prefix(1).contains($0) }.prefix(5))
-                    }
-                    return list
-                }()
-
-                if !moreMovies.isEmpty {
-                    Text("More like this")
+                // More results list
+                if results.count > 1 {
+                    Text("More results")
                         .font(.system(size: 12, weight: .bold))
                         .tracking(1.2)
                         .textCase(.uppercase)
@@ -250,7 +248,7 @@ struct DiscoverySearchView: View {
                         .padding(.bottom, 6)
 
                     VStack(spacing: 0) {
-                        ForEach(Array(moreMovies.enumerated()), id: \.element.id) { i, movie in
+                        ForEach(Array(results.dropFirst().prefix(9).enumerated()), id: \.element.id) { i, movie in
                             Button(action: { onOpenDetail(movie) }) {
                                 HStack(spacing: 12) {
                                     PosterArt(movie: movie, width: 52)
@@ -259,7 +257,9 @@ struct DiscoverySearchView: View {
                                             .font(.flxDisplay(15))
                                             .foregroundColor(.white)
                                             .lineLimit(1)
-                                        Text("\(movie.year) · \(movie.genre)")
+                                        Text([String(movie.year), movie.genre]
+                                            .filter { !$0.isEmpty }
+                                            .joined(separator: " · "))
                                             .font(.system(size: 12))
                                             .foregroundColor(Color.dFg3)
                                     }
@@ -279,7 +279,7 @@ struct DiscoverySearchView: View {
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 20)
                             }
-                            if i < moreMovies.count - 1 {
+                            if i < min(results.count - 2, 8) {
                                 Divider().background(Color.dLine).padding(.leading, 84)
                             }
                         }
@@ -297,16 +297,14 @@ struct DiscoverySearchView: View {
             .foregroundColor(Color.dFg3)
     }
 
-    private var genreTiles: [(name: String, colorA: Color, colorB: Color)] {
-        [
-            (name: "Sci-Fi",   colorA: Color(hex: "3a1556"), colorB: Color(hex: "1a0a30")),
-            (name: "Drama",    colorA: Color(hex: "4a2810"), colorB: Color(hex: "1a0e05")),
-            (name: "Thriller", colorA: Color(hex: "0d2a4a"), colorB: Color(hex: "040d1a")),
-            (name: "Horror",   colorA: Color(hex: "3d0a12"), colorB: Color(hex: "1a0608")),
-            (name: "Romance",  colorA: Color(hex: "0e3a3a"), colorB: Color(hex: "031414")),
-            (name: "Western",  colorA: Color(hex: "5a2a08"), colorB: Color(hex: "1f1004")),
-        ]
-    }
+    private var genreTiles: [(name: String, colorA: Color, colorB: Color)] {[
+        (name: "Sci-Fi",   colorA: Color(hex: "3a1556"), colorB: Color(hex: "1a0a30")),
+        (name: "Drama",    colorA: Color(hex: "4a2810"), colorB: Color(hex: "1a0e05")),
+        (name: "Thriller", colorA: Color(hex: "0d2a4a"), colorB: Color(hex: "040d1a")),
+        (name: "Horror",   colorA: Color(hex: "3d0a12"), colorB: Color(hex: "1a0608")),
+        (name: "Romance",  colorA: Color(hex: "0e3a3a"), colorB: Color(hex: "031414")),
+        (name: "Western",  colorA: Color(hex: "5a2a08"), colorB: Color(hex: "1f1004")),
+    ]}
 }
 
 // MARK: - Search field
@@ -389,7 +387,6 @@ private struct FlowLayout: Layout {
         var x: CGFloat = 0
         var y: CGFloat = 0
         var lineH: CGFloat = 0
-        var totalH: CGFloat = 0
 
         for view in subviews {
             let size = view.sizeThatFits(.unspecified)
@@ -400,8 +397,7 @@ private struct FlowLayout: Layout {
             lineH = max(lineH, size.height)
             x += size.width + spacing
         }
-        totalH = y + lineH
-        return CGSize(width: maxWidth, height: totalH)
+        return CGSize(width: maxWidth, height: y + lineH)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
