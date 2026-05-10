@@ -289,24 +289,8 @@ struct LiquidGlassButton<Label: View>: View {
             label()
                 .foregroundColor(.white)
                 .frame(width: size, height: size)
-                .background(
-                    ZStack {
-                        Circle().fill(.ultraThinMaterial)
-                        Circle().fill(Color.black.opacity(0.35))
-                    }
-                )
-                .overlay(
-                    Circle().strokeBorder(
-                        LinearGradient(
-                            colors: [.white.opacity(0.22), .white.opacity(0.05)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-                )
-                .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
         }
-        .buttonStyle(ScaleButtonStyle(scale: 0.96))
+        .glassEffect(in: Circle())
     }
 }
 

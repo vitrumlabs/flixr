@@ -50,7 +50,7 @@ struct DoneScreen: View {
 
                 Spacer()
 
-                FlxButton(title: "Dive In", variant: .primary, icon: "arrow.right") { go(.welcome) }
+                FlxButton(title: "Dive In", variant: .primary, icon: "arrow.right") { go(.mainApp) }
                     .padding(.bottom, 8)
             }
             .padding(.horizontal, 28)
