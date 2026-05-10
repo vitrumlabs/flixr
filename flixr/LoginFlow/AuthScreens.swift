@@ -57,11 +57,8 @@ struct SignInScreen: View {
                         .padding(.bottom, 16)
                     }
 
-                    // Social auth — skip loading, go straight to done
-                    VStack(spacing: 10) {
-                        FlxButton(title: "Continue with Apple", variant: .apple, icon: "apple.logo") { go(.done) }
-                        FlxButton(title: "Continue with Google", variant: .google) { go(.done) }
-                    }
+                    // Social auth
+                    SocialAuthButtons(go: go)
 
                     OrDivider().padding(.vertical, 20)
 
@@ -179,11 +176,8 @@ struct SignUpScreen: View {
                         .padding(.bottom, 24)
                     }
 
-                    // Social auth — skip loading, go straight to done
-                    VStack(spacing: 12) {
-                        FlxButton(title: "Sign Up with Apple", variant: .apple, icon: "apple.logo") { go(.done) }
-                        FlxButton(title: "Sign Up with Google", variant: .google) { go(.done) }
-                    }
+                    // Social auth
+                    SocialAuthButtons(go: go)
 
                     OrDivider().padding(.vertical, 28)
 
@@ -224,6 +218,46 @@ struct SignUpScreen: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
                 .padding(.bottom, 32)
+            }
+        }
+    }
+}
+
+// MARK: - Shared social auth buttons
+
+struct SocialAuthButtons: View {
+    var go: (LoginScreen) -> Void
+    @Environment(AuthManager.self) private var auth
+
+    var body: some View {
+        VStack(spacing: 10) {
+            if let error = auth.authError {
+                Text(error)
+                    .font(.system(size: 13))
+                    .foregroundColor(.flxRed)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 4)
+            }
+            FlxButton(
+                title: "Continue with Apple",
+                variant: .apple,
+                icon: "apple.logo",
+                isDisabled: auth.isLoading
+            ) {
+                Task {
+                    await auth.signInWithApple()
+                    if auth.user != nil { go(.mainApp) }
+                }
+            }
+            FlxButton(
+                title: "Continue with Google",
+                variant: .google,
+                isDisabled: auth.isLoading
+            ) {
+                Task {
+                    await auth.signInWithGoogle()
+                    if auth.user != nil { go(.mainApp) }
+                }
             }
         }
     }
