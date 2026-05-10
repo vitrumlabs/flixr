@@ -183,19 +183,13 @@ private struct FlxButtonStyle: ButtonStyle {
     var borderW: CGFloat { (variant == .ghost || variant == .google) ? 0 : 1 }
 }
 
-// MARK: - Google "G" icon (simplified multicolor)
+// MARK: - Google "G" icon (official asset from GoogleSignIn SDK)
 
 struct GoogleGIcon: View {
     var body: some View {
-        Text("G")
-            .font(.system(size: 14, weight: .bold, design: .rounded))
-            .foregroundStyle(
-                LinearGradient(
-                    colors: [Color(red: 0.259, green: 0.522, blue: 0.957),
-                             Color(red: 0.918, green: 0.263, blue: 0.208)],
-                    startPoint: .top, endPoint: .bottom
-                )
-            )
+        Image("GoogleG")
+            .resizable()
+            .scaledToFit()
     }
 }
 
