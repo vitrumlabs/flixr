@@ -245,7 +245,6 @@ private struct MovieCardView: View {
             // Top chips
             HStack(spacing: 6) {
                 MetaChip(text: "\(String(format: "%.1f", movie.rating))", isRating: true)
-                MetaChip(text: movie.releaseDate)
                 if !movie.cert.isEmpty { MetaChip(text: movie.cert) }
                 Spacer()
             }

@@ -60,6 +60,11 @@ struct MovieDetailView: View {
             .glassEffect(in: Circle())
             .frame(maxHeight: .infinity)
 
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: heroHeight)
+        .clipped()
+        .overlay(alignment: .topLeading) {
             Button(action: onClose) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
@@ -67,13 +72,9 @@ struct MovieDetailView: View {
                     .frame(width: 40, height: 40)
             }
             .glassEffect(in: Circle())
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.top, 52)
             .padding(.leading, 16)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: heroHeight)
-        .clipped()
     }
 
     // MARK: - Content
@@ -194,8 +195,8 @@ struct MovieDetailView: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        ForEach(Array(displayed.cast.enumerated()), id: \.element) { i, name in
-                            CastAvatar(name: name, index: i)
+                        ForEach(Array(displayed.cast.enumerated()), id: \.offset) { i, member in
+                            CastAvatar(member: member, index: i)
                         }
                     }
                     .padding(.horizontal, 1)
@@ -265,7 +266,7 @@ private struct InfoTile: View {
 // MARK: - Cast avatar
 
 private struct CastAvatar: View {
-    var name: String
+    var member: CastMember
     var index: Int
 
     private let palettes: [(Color, Color)] = [
@@ -278,18 +279,27 @@ private struct CastAvatar: View {
     ]
 
     private var initials: String {
-        name.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined()
+        member.name.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined()
     }
-    private var firstName: String { name.components(separatedBy: " ").first ?? name }
-    private var lastName: String  { name.components(separatedBy: " ").dropFirst().joined(separator: " ") }
+    private var firstName: String { member.name.components(separatedBy: " ").first ?? member.name }
+    private var lastName: String  { member.name.components(separatedBy: " ").dropFirst().joined(separator: " ") }
 
     var body: some View {
         let pal = palettes[index % palettes.count]
         VStack(spacing: 6) {
             ZStack {
                 Circle().fill(LinearGradient(colors: [pal.0, pal.1], startPoint: .topLeading, endPoint: .bottomTrailing))
+                if let path = member.profilePath, let url = TMDBImage.profileURL(path) {
+                    AsyncImage(url: url) { phase in
+                        if case .success(let image) = phase {
+                            image.resizable().scaledToFill()
+                        }
+                    }
+                    .clipShape(Circle())
+                } else {
+                    Text(initials).font(.flxDisplay(18)).foregroundColor(.white)
+                }
                 Circle().strokeBorder(Color.dLine, lineWidth: 1)
-                Text(initials).font(.flxDisplay(18)).foregroundColor(.white)
             }
             .frame(width: 64, height: 64)
             VStack(spacing: 1) {

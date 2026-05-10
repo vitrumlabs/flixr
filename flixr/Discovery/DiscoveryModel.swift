@@ -1,5 +1,13 @@
 import SwiftUI
 
+// MARK: - Cast member
+
+struct CastMember: Identifiable, Equatable {
+    let id: Int
+    let name: String
+    let profilePath: String?
+}
+
 // MARK: - Movie model
 
 struct Movie: Identifiable, Equatable {
@@ -16,7 +24,7 @@ struct Movie: Identifiable, Equatable {
     let director: String
     let studio: String
     let language: String
-    let cast: [String]
+    let cast: [CastMember]
     let platforms: [String]
     let palette: MoviePalette
     let synopsis: String

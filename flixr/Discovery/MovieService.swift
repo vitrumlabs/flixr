@@ -23,6 +23,10 @@ enum TMDBImage {
     static func backdropURL(_ path: String) -> URL? {
         URL(string: "\(base)w1280\(path)")
     }
+
+    static func profileURL(_ path: String) -> URL? {
+        URL(string: "\(base)w185\(path)")
+    }
 }
 
 // MARK: - Service
@@ -115,7 +119,12 @@ extension Movie {
         let votes      = d["vote_count"] as? Int ?? 0
 
         let director = crewArray.first(where: { $0["job"] as? String == "Director" })?["name"] as? String ?? ""
-        let castNames = castArray.prefix(5).compactMap { $0["name"] as? String }
+        let castNames = castArray.prefix(5).compactMap { member -> CastMember? in
+            guard let id = member["id"] as? Int,
+                  let name = member["name"] as? String
+            else { return nil }
+            return CastMember(id: id, name: name, profilePath: member["profile_path"] as? String)
+        }
         let studio    = companies.first?["name"] as? String ?? ""
         let runtime   = Self.formatRuntime(d["runtime"] as? Int)
 
