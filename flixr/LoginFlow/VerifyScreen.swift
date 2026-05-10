@@ -17,7 +17,7 @@ struct VerifyEmailScreen: View {
         ScreenShell(dim: 0.7) {
             VStack(alignment: .leading, spacing: 0) {
                 if !isVerified {
-                    LiquidGlassButton(action: { go(.signup) }) {
+                    LiquidGlassButton(action: { go(.welcome) }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 18, weight: .semibold))
                     }

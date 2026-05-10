@@ -133,7 +133,7 @@ class AuthManager: NSObject {
             let req = result.user.createProfileChangeRequest()
             req.displayName = name
             try? await req.commitChanges()
-            try await result.user.sendEmailVerification()
+            try? await result.user.sendEmailVerification()
             await createProfileIfNeeded(result.user, isNewUser: true, name: name)
             return .success
         } catch let error as NSError {
