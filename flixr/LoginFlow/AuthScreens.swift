@@ -242,7 +242,7 @@ struct SocialAuthButtons: View {
                 title: "Continue with Apple",
                 variant: .apple,
                 icon: "apple.logo",
-                isLoading: auth.isLoading
+                isDisabled: auth.isLoading
             ) {
                 Task {
                     await auth.signInWithApple()
@@ -252,7 +252,7 @@ struct SocialAuthButtons: View {
             FlxButton(
                 title: "Continue with Google",
                 variant: .google,
-                isLoading: auth.isLoading
+                isDisabled: auth.isLoading
             ) {
                 Task {
                     await auth.signInWithGoogle()
