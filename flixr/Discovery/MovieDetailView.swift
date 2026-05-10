@@ -6,6 +6,12 @@ struct MovieDetailView: View {
     var movie: Movie
     var onClose: () -> Void
 
+    @Environment(UserLibrary.self) private var library
+    @State private var detail: Movie? = nil
+    @State private var isFetching = false
+
+    private var displayed: Movie { detail ?? movie }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -14,10 +20,9 @@ struct MovieDetailView: View {
                 VStack(spacing: 0) {
                     // Hero backdrop
                     ZStack(alignment: .bottom) {
-                        BackdropArt(movie: movie, aspectRatio: 16 / 10)
+                        BackdropArt(movie: displayed, aspectRatio: 16 / 10)
                             .frame(maxWidth: .infinity)
 
-                        // Gradient overlay
                         LinearGradient(
                             stops: [
                                 .init(color: .black.opacity(0.35), location: 0),
@@ -28,7 +33,6 @@ struct MovieDetailView: View {
                             startPoint: .top, endPoint: .bottom
                         )
 
-                        // Play button
                         Button(action: {}) {
                             Image(systemName: "play.fill")
                                 .font(.system(size: 24))
@@ -38,7 +42,6 @@ struct MovieDetailView: View {
                         .glassEffect(in: Circle())
                         .frame(maxHeight: .infinity)
 
-                        // Back button (top-left)
                         Button(action: onClose) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 18, weight: .semibold))
@@ -54,38 +57,17 @@ struct MovieDetailView: View {
 
                     // Content
                     VStack(alignment: .leading, spacing: 0) {
-                        // Title
-                        Text(movie.title)
+                        Text(displayed.title)
                             .font(.flxDisplay(34))
                             .tracking(-0.5)
                             .foregroundColor(.white)
                             .padding(.top, 14)
 
-                        // Meta row
-                        HStack(spacing: 0) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color(hex: "FFD700"))
-                                Text(String(format: "%.1f", movie.rating))
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(Color(hex: "FFD700"))
-                            }
-                            DotSep()
-                            Text(String(movie.year))
-                                .foregroundColor(Color.dFg2)
-                            DotSep()
-                            Text(movie.runtime)
-                                .foregroundColor(Color.dFg2)
-                            DotSep()
-                            Text(movie.genre)
-                                .foregroundColor(Color.dFg2)
-                        }
-                        .font(.system(size: 14))
-                        .padding(.top, 8)
+                        // Meta row — skip empty segments
+                        metaRow
+                            .padding(.top, 8)
 
-                        // Synopsis
-                        Text(movie.synopsis)
+                        Text(displayed.synopsis)
                             .font(.system(size: 15))
                             .foregroundColor(Color.dFg2)
                             .lineSpacing(3)
@@ -113,10 +95,19 @@ struct MovieDetailView: View {
                             }
                             .buttonStyle(ScaleButtonStyle(scale: 0.97))
 
-                            Button(action: {}) {
-                                Image(systemName: "bookmark")
+                            let inWatchlist = library.watchlistIds.contains(displayed.id)
+                            Button(action: {
+                                Task {
+                                    if inWatchlist {
+                                        await library.removeFromWatchlist(displayed)
+                                    } else {
+                                        await library.addToWatchlist(displayed)
+                                    }
+                                }
+                            }) {
+                                Image(systemName: inWatchlist ? "bookmark.fill" : "bookmark")
                                     .font(.system(size: 18))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(inWatchlist ? .flxRed : .white)
                                     .frame(width: 52, height: 48)
                                     .background(Color.white.opacity(0.05))
                                     .clipShape(Capsule())
@@ -125,39 +116,53 @@ struct MovieDetailView: View {
                         }
                         .padding(.top, 22)
 
-                        // Director / Studio / Language grid
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                            InfoTile(key: "Director", value: movie.director)
-                            InfoTile(key: "Studio", value: movie.studio)
-                            InfoTile(key: "Language", value: movie.language)
+                        // Director / Studio / Language
+                        LazyVGrid(
+                            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
+                            spacing: 10
+                        ) {
+                            InfoTile(key: "Director",  value: displayed.director,  isLoading: isFetching)
+                            InfoTile(key: "Studio",    value: displayed.studio,    isLoading: isFetching)
+                            InfoTile(key: "Language",  value: displayed.language,  isLoading: false)
                         }
                         .padding(.top, 26)
 
                         // Cast
-                        VStack(alignment: .leading, spacing: 10) {
-                            sectionLabel("Cast")
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(Array(movie.cast.enumerated()), id: \.element) { i, name in
-                                        CastAvatar(name: name, index: i)
+                        if isFetching || !displayed.cast.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                sectionLabel("Cast")
+                                if isFetching {
+                                    ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
+                                } else {
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 12) {
+                                            ForEach(Array(displayed.cast.enumerated()), id: \.element) { i, name in
+                                                CastAvatar(name: name, index: i)
+                                            }
+                                        }
+                                        .padding(.horizontal, 1)
                                     }
                                 }
-                                .padding(.horizontal, 1)
                             }
+                            .padding(.top, 26)
                         }
-                        .padding(.top, 26)
 
                         // Available on
-                        VStack(alignment: .leading, spacing: 10) {
-                            sectionLabel("Available on")
-                            FlexPlatforms(platforms: movie.platforms)
+                        if !displayed.platforms.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                sectionLabel("Available on")
+                                FlexPlatforms(platforms: displayed.platforms)
+                            }
+                            .padding(.top, 22)
                         }
-                        .padding(.top, 22)
 
                         // Release / Rated
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                            InfoTile(key: "Release", value: movie.releaseDate)
-                            InfoTile(key: "Rated", value: movie.cert)
+                        LazyVGrid(
+                            columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                            spacing: 10
+                        ) {
+                            InfoTile(key: "Release", value: displayed.releaseDate, isLoading: false)
+                            InfoTile(key: "Rated",   value: displayed.cert,        isLoading: false)
                         }
                         .padding(.top, 22)
                         .padding(.bottom, 40)
@@ -168,6 +173,41 @@ struct MovieDetailView: View {
             .ignoresSafeArea(edges: .top)
         }
         .preferredColorScheme(.dark)
+        .task {
+            guard let id = Int(movie.id) else { return }
+            isFetching = true
+            detail = try? await MovieService.shared.fetchDetails(id: id)
+            isFetching = false
+        }
+    }
+
+    // Only inserts DotSep between non-empty segments
+    private var metaRow: some View {
+        let segments: [String] = [
+            String(format: "%.1f", displayed.rating),
+            String(displayed.year),
+            displayed.runtime,
+            displayed.genre,
+        ].filter { !$0.isEmpty && $0 != "0" }
+
+        return HStack(spacing: 0) {
+            ForEach(Array(segments.enumerated()), id: \.offset) { i, seg in
+                if i == 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "FFD700"))
+                        Text(seg)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(Color(hex: "FFD700"))
+                    }
+                } else {
+                    DotSep()
+                    Text(seg).foregroundColor(Color.dFg2)
+                }
+            }
+        }
+        .font(.system(size: 14))
     }
 
     private func sectionLabel(_ text: String) -> some View {
@@ -184,6 +224,7 @@ struct MovieDetailView: View {
 private struct InfoTile: View {
     var key: String
     var value: String
+    var isLoading: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -192,10 +233,17 @@ private struct InfoTile: View {
                 .tracking(0.8)
                 .textCase(.uppercase)
                 .foregroundColor(Color.dFg3)
-            Text(value)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
-                .lineLimit(2)
+            if isLoading {
+                Capsule()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(height: 14)
+                    .frame(maxWidth: .infinity)
+            } else {
+                Text(value.isEmpty ? "—" : value)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(value.isEmpty ? Color.dFg3 : .white)
+                    .lineLimit(2)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -224,7 +272,6 @@ private struct CastAvatar: View {
     private var initials: String {
         name.split(separator: " ").prefix(2).compactMap { $0.first.map { String($0) } }.joined()
     }
-
     private var firstName: String { name.components(separatedBy: " ").first ?? name }
     private var lastName: String { name.components(separatedBy: " ").dropFirst().joined(separator: " ") }
 
