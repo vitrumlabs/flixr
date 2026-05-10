@@ -5,17 +5,25 @@ import SwiftUI
 struct WatchlistView: View {
     var onOpenDetail: (Movie) -> Void
 
+    @Environment(UserLibrary.self) private var library
     @State private var activeTab = "saved"
     @State private var sortLabel = "Recently added"
 
-    private let tabs = [
-        (id: "saved", label: "To Watch", count: 24),
-        (id: "liked", label: "Liked", count: 38),
-        (id: "seen",  label: "Seen",  count: 112),
-    ]
+    private var tabs: [(id: String, label: String, count: Int)] {[
+        (id: "saved", label: "To Watch", count: library.watchlist.count),
+        (id: "liked", label: "Liked",    count: library.liked.count),
+    ]}
 
     private var movieList: [Movie] {
-        (movieCatalog + movieCatalog).prefix(7).map { $0 }
+        let snapshots = activeTab == "liked" ? library.liked : library.watchlist
+        let sorted = sortLabel == "Highest rated"
+            ? snapshots.sorted { $0.rating > $1.rating }
+            : snapshots.reversed()
+        return sorted.map { $0.asMovie() }
+    }
+
+    private var activeTab_tuple: (id: String, label: String, count: Int) {
+        tabs.first(where: { $0.id == activeTab }) ?? tabs[0]
     }
 
     var body: some View {
@@ -33,7 +41,7 @@ struct WatchlistView: View {
                     Text("Watchlist")
                         .font(.flxDisplay(32))
                         .foregroundColor(.white)
-                    Text("\(tabs.first(where: { $0.id == activeTab })?.count ?? 0) titles · \(sortLabel)")
+                    Text("\(activeTab_tuple.count) titles · \(sortLabel)")
                         .font(.system(size: 13))
                         .foregroundColor(Color.dFg3)
                 }
@@ -76,7 +84,7 @@ struct WatchlistView: View {
                 ScrollView(showsIndicators: false) {
                     // Sort row
                     HStack {
-                        Text("All saved")
+                        Text(activeTab == "liked" ? "All liked" : "All saved")
                             .font(.system(size: 12, weight: .bold))
                             .tracking(1.2)
                             .textCase(.uppercase)
@@ -103,21 +111,41 @@ struct WatchlistView: View {
                     .padding(.top, 14)
                     .padding(.bottom, 6)
 
-                    // Movie rows
-                    VStack(spacing: 0) {
-                        ForEach(Array(movieList.enumerated()), id: \.element.id) { i, movie in
-                            WatchlistRow(movie: movie, isLast: i == movieList.count - 1) {
-                                onOpenDetail(movie)
+                    if movieList.isEmpty {
+                        emptyState
+                    } else {
+                        VStack(spacing: 0) {
+                            ForEach(Array(movieList.enumerated()), id: \.element.id) { i, movie in
+                                WatchlistRow(movie: movie, isLast: i == movieList.count - 1) {
+                                    onOpenDetail(movie)
+                                }
                             }
                         }
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
 
                     Spacer().frame(height: 110)
                 }
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: activeTab == "liked" ? "heart" : "bookmark")
+                .font(.system(size: 36))
+                .foregroundColor(Color.dFg3)
+            Text(activeTab == "liked" ? "No liked films yet" : "Nothing saved yet")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+            Text(activeTab == "liked" ? "Swipe right on films you love." : "Bookmark films to watch later.")
+                .font(.system(size: 13))
+                .foregroundColor(Color.dFg3)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.top, 60)
+        .padding(.horizontal, 40)
     }
 }
 
@@ -150,7 +178,9 @@ private struct WatchlistRow: View {
                         }
                     }
 
-                    Text("\(movie.year) · \(movie.runtime) · \(movie.genre)")
+                    Text([String(movie.year), movie.runtime, movie.genre]
+                        .filter { !$0.isEmpty }
+                        .joined(separator: " · "))
                         .font(.system(size: 12))
                         .foregroundColor(Color.dFg3)
                         .padding(.top, 4)

@@ -16,6 +16,8 @@ class AuthManager: NSObject {
     var isSigningOut = false
     var authError: String? = nil
 
+    var uid: String? { user?.uid }
+
     private var currentNonce: String?
     private var authStateHandle: AuthStateDidChangeListenerHandle?
 

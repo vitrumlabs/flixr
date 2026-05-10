@@ -8,89 +8,102 @@ extension Color {
     static let dFg3  = Color.white.opacity(0.55)
 }
 
-// MARK: - Procedural cinematic backdrop (16:9 by default)
+// MARK: - Cinematic backdrop — TMDB poster image with procedural fallback
 
 struct BackdropArt: View {
     var movie: Movie
     var aspectRatio: CGFloat = 16 / 9
 
     var body: some View {
-        let p = movie.palette
+        if let path = movie.posterPath, let url = TMDBImage.posterURL(path, width: 500) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image.resizable().scaledToFill()
+                default:
+                    ProceduralBackdrop(palette: movie.palette, aspectRatio: aspectRatio)
+                }
+            }
+            .aspectRatio(aspectRatio, contentMode: .fill)
+            .clipped()
+        } else {
+            ProceduralBackdrop(palette: movie.palette, aspectRatio: aspectRatio)
+        }
+    }
+}
+
+private struct ProceduralBackdrop: View {
+    var palette: MoviePalette
+    var aspectRatio: CGFloat
+
+    var body: some View {
+        let p = palette
         GeometryReader { geo in
             ZStack {
                 LinearGradient(colors: [p.a, p.b], startPoint: .topLeading, endPoint: .bottomTrailing)
-
-                // Accent haze top-left
-                RadialGradient(
-                    colors: [p.accent.opacity(0.33), .clear],
-                    center: UnitPoint(x: 0.18, y: 0.22),
-                    startRadius: 0,
-                    endRadius: geo.size.width * 0.6
-                )
-                // Glow haze bottom-right
-                RadialGradient(
-                    colors: [p.glow.opacity(0.13), .clear],
-                    center: UnitPoint(x: 0.92, y: 0.7),
-                    startRadius: 0,
-                    endRadius: geo.size.width * 0.7
-                )
-                // Orb
-                RadialGradient(
-                    colors: [p.glow.opacity(0.8), p.accent.opacity(0.33), .clear],
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: geo.size.width * 0.17
-                )
-                .frame(width: geo.size.width * 0.34, height: geo.size.width * 0.34)
-                .clipShape(Circle())
-                .blur(radius: 2)
-                .position(x: geo.size.width * 0.79, y: geo.size.height * 0.34)
-
-                // Horizon line
+                RadialGradient(colors: [p.accent.opacity(0.33), .clear],
+                               center: UnitPoint(x: 0.18, y: 0.22),
+                               startRadius: 0, endRadius: geo.size.width * 0.6)
+                RadialGradient(colors: [p.glow.opacity(0.13), .clear],
+                               center: UnitPoint(x: 0.92, y: 0.7),
+                               startRadius: 0, endRadius: geo.size.width * 0.7)
+                RadialGradient(colors: [p.glow.opacity(0.8), p.accent.opacity(0.33), .clear],
+                               center: .center, startRadius: 0, endRadius: geo.size.width * 0.17)
+                    .frame(width: geo.size.width * 0.34, height: geo.size.width * 0.34)
+                    .clipShape(Circle()).blur(radius: 2)
+                    .position(x: geo.size.width * 0.79, y: geo.size.height * 0.34)
                 Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.clear, p.glow.opacity(0.5), .clear],
-                            startPoint: .leading, endPoint: .trailing
-                        )
-                    )
-                    .frame(height: 1)
-                    .opacity(0.6)
+                    .fill(LinearGradient(colors: [.clear, p.glow.opacity(0.5), .clear],
+                                        startPoint: .leading, endPoint: .trailing))
+                    .frame(height: 1).opacity(0.6)
                     .position(x: geo.size.width / 2, y: geo.size.height * 0.58)
-
-                // Bottom fade
                 LinearGradient(colors: [.clear, p.b.opacity(0.8), p.b], startPoint: .top, endPoint: .bottom)
-                    .frame(height: geo.size.height * 0.4)
-                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .frame(height: geo.size.height * 0.4).frame(maxHeight: .infinity, alignment: .bottom)
             }
         }
         .aspectRatio(aspectRatio, contentMode: .fit)
     }
 }
 
-// MARK: - Procedural poster (2:3)
+// MARK: - Poster — TMDB image with procedural fallback
 
 struct PosterArt: View {
     var movie: Movie
     var width: CGFloat = 80
 
     var body: some View {
+        if let path = movie.posterPath, let url = TMDBImage.posterURL(path, width: 342) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image.resizable().scaledToFill()
+                default:
+                    ProceduralPoster(movie: movie, width: width)
+                }
+            }
+            .frame(width: width, height: width * 1.5)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
+            .shadow(color: .black.opacity(0.55), radius: 12, y: 5)
+        } else {
+            ProceduralPoster(movie: movie, width: width)
+        }
+    }
+}
+
+private struct ProceduralPoster: View {
+    var movie: Movie
+    var width: CGFloat
+
+    var body: some View {
         let p = movie.palette
         let lines = movie.title.uppercased().split(separator: " ").map(String.init)
         ZStack(alignment: .bottomLeading) {
             LinearGradient(colors: [p.a, p.b], startPoint: .topLeading, endPoint: .bottomTrailing)
-
-            RadialGradient(
-                colors: [p.glow.opacity(0.4), .clear],
-                center: UnitPoint(x: 0.5, y: 0.28),
-                startRadius: 0, endRadius: width * 0.4
-            )
-            RadialGradient(
-                colors: [p.accent.opacity(0.33), .clear],
-                center: UnitPoint(x: 0.5, y: 0.78),
-                startRadius: 0, endRadius: width * 0.25
-            )
-
+            RadialGradient(colors: [p.glow.opacity(0.4), .clear],
+                           center: UnitPoint(x: 0.5, y: 0.28), startRadius: 0, endRadius: width * 0.4)
+            RadialGradient(colors: [p.accent.opacity(0.33), .clear],
+                           center: UnitPoint(x: 0.5, y: 0.78), startRadius: 0, endRadius: width * 0.25)
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(lines, id: \.self) { line in
                     Text(line)
@@ -101,8 +114,7 @@ struct PosterArt: View {
                         .lineLimit(1)
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 10)
+            .padding(.horizontal, 8).padding(.bottom, 10)
         }
         .frame(width: width, height: width * 1.5)
         .clipShape(RoundedRectangle(cornerRadius: 8))

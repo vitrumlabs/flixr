@@ -6,12 +6,10 @@ import FirebaseFirestore
 
 struct ProfileView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(UserLibrary.self) private var library
 
-    @State private var likedCount     = 0
-    @State private var skippedCount   = 0
-    @State private var watchlistCount = 0
-    @State private var isFlixrPlus    = false
-    @State private var genres: [String] = []
+    @State private var skippedCount = 0
+    @State private var isFlixrPlus  = false
 
     private var user: FirebaseAuth.User? { auth.user }
 
@@ -30,13 +28,11 @@ struct ProfileView: View {
         return "Member since \(Calendar.current.component(.year, from: date))"
     }
 
-    private var stats: [(String, String)] {
-        [
-            ("Swiped",    (likedCount + skippedCount).formatted()),
-            ("Liked",     likedCount.formatted()),
-            ("Watchlist", watchlistCount.formatted()),
-        ]
-    }
+    private var stats: [(String, String)] {[
+        ("Swiped",    (library.liked.count + skippedCount).formatted()),
+        ("Liked",     library.liked.count.formatted()),
+        ("Watchlist", library.watchlist.count.formatted()),
+    ]}
 
     private let settingRows: [(label: String, sub: String, icon: String)] = [
         ("Filters & Preferences", "Genres, mood, decade",  "slider.horizontal.3"),
@@ -159,13 +155,13 @@ struct ProfileView: View {
                             .textCase(.uppercase)
                             .foregroundColor(Color.dFg3)
 
-                        if genres.isEmpty {
+                        if library.topGenres.isEmpty {
                             Text("Keep swiping to build your taste profile.")
                                 .font(.system(size: 14))
                                 .foregroundColor(Color.dFg3)
                                 .padding(.vertical, 4)
                         } else {
-                            GenreChips(genres: genres)
+                            GenreChips(genres: library.topGenres)
                         }
                     }
                     .padding(16)
@@ -245,11 +241,8 @@ struct ProfileView: View {
         guard let data = try? await Firestore.firestore()
             .collection("users").document(uid).getDocument().data()
         else { return }
-        likedCount     = (data["liked"]     as? [Any])?.count ?? 0
-        skippedCount   = (data["skipped"]   as? [Any])?.count ?? 0
-        watchlistCount = (data["watchlist"] as? [Any])?.count ?? 0
-        isFlixrPlus    = data["isFlixrPlus"] as? Bool ?? false
-        genres         = (data["filters"] as? [String: Any])?["genres"] as? [String] ?? []
+        skippedCount = (data["skipped"] as? [Any])?.count ?? 0
+        isFlixrPlus  = data["isFlixrPlus"] as? Bool ?? false
     }
 }
 
