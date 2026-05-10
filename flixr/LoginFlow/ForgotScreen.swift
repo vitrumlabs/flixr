@@ -4,13 +4,21 @@ struct ForgotScreen: View {
     var go: (LoginScreen) -> Void
     var isSent = false
     var userEmail: String = ""
+    var onSubmit: (String) -> Void = { _ in }
 
+    @Environment(AuthManager.self) private var auth
     @State private var email: String
 
-    init(go: @escaping (LoginScreen) -> Void, isSent: Bool = false, userEmail: String = "") {
+    init(
+        go: @escaping (LoginScreen) -> Void,
+        isSent: Bool = false,
+        userEmail: String = "",
+        onSubmit: @escaping (String) -> Void = { _ in }
+    ) {
         self.go = go
         self.isSent = isSent
         self.userEmail = userEmail
+        self.onSubmit = onSubmit
         _email = State(initialValue: userEmail)
     }
 
@@ -41,6 +49,7 @@ struct ForgotScreen: View {
                     Spacer().frame(height: 18)
 
                     FlxButton(title: "Send Reset Link", variant: .primary, icon: "arrow.right") {
+                        onSubmit(email)
                         go(.forgotLoading)
                     }
                 } else {
@@ -74,7 +83,7 @@ struct ForgotScreen: View {
 
                     HStack(spacing: 4) {
                         Text("Didn't get it?").foregroundColor(.fg3)
-                        Button("Resend") { }
+                        Button("Resend") { Task { await auth.sendPasswordReset(email: email) } }
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
                             .underline()
