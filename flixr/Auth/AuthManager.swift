@@ -15,6 +15,9 @@ class AuthManager: NSObject {
     private var currentNonce: String?
 
     override init() {
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
         super.init()
         user = Auth.auth().currentUser
         Auth.auth().addStateDidChangeListener { [weak self] _, user in
