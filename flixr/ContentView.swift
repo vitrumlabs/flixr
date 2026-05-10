@@ -12,7 +12,7 @@ struct ContentView: View {
                 DiscoveryFlowView()
                     .transition(.opacity)
             } else {
-                LoginFlowView()
+                LoginFlowView(onComplete: { auth.acceptCurrentUser() })
                     .transition(.opacity)
             }
         }

@@ -50,6 +50,24 @@ struct LoadingView: View {
     }
 }
 
+// MARK: - Async loading wrapper (performs real auth work, then navigates)
+
+struct AsyncLoadingView: View {
+    var title: String
+    var sub: String
+    var brand: LoadingView.Brand = .flixr
+    var go: (LoginScreen) -> Void
+    var perform: () async -> LoginScreen
+
+    var body: some View {
+        LoadingView(title: title, sub: sub, brand: brand)
+            .task {
+                let next = await perform()
+                go(next)
+            }
+    }
+}
+
 // MARK: - Auto-advancing wrapper (used by router for transitional loading states)
 
 struct AutoAdvanceLoadingView: View {

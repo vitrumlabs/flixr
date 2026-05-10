@@ -74,6 +74,7 @@ struct SwipeScreen: View {
                 .padding(.bottom, 14)
 
                 // Card stack
+                GeometryReader { cardGeo in
                 ZStack {
                     if isDone {
                         VStack(spacing: 12) {
@@ -91,7 +92,7 @@ struct SwipeScreen: View {
                             let ty = Double(depth) * 12
 
                             CardView(card: card, dragOffset: isFront ? dragOffset : .zero)
-                                .frame(width: UIScreen.main.bounds.width - 48, height: 420)
+                                .frame(width: cardGeo.size.width - 48, height: 420)
                                 .scaleEffect(scale)
                                 .offset(y: ty)
                                 .opacity(1 - Double(depth) * 0.18)
@@ -115,6 +116,7 @@ struct SwipeScreen: View {
                         }
                     }
                 }
+                } // GeometryReader
                 .frame(height: 420)
 
                 Spacer(minLength: 0)

@@ -84,7 +84,7 @@ struct DiscoveryFiltersSheet: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 22)
                     }
-                    .frame(maxHeight: UIScreen.main.bounds.height * 0.56)
+                    .containerRelativeFrame(.vertical) { h, _ in h * 0.56 }
 
                     // CTA
                     FlxButton(title: "Show 248 results", variant: .primary, action: onClose)
@@ -151,40 +151,37 @@ private struct RatingSlider: View {
     }
 
     var body: some View {
-        ZStack(alignment: .leading) {
-            // Track background
-            Capsule()
-                .fill(Color.white.opacity(0.08))
-                .frame(height: 4)
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                // Track background
+                Capsule()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 4)
 
-            // Fill
-            Capsule()
-                .fill(Color.flxRed)
-                .frame(width: max(0, CGFloat(value) * (UIScreen.main.bounds.width - 40 - 40)), height: 4)
+                // Fill
+                Capsule()
+                    .fill(Color.flxRed)
+                    .frame(width: max(0, CGFloat(value) * geo.size.width), height: 4)
 
-            // Thumb
-            GeometryReader { geo in
-                HStack {
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 20, height: 20)
-                        .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
-                        .offset(x: max(0, CGFloat(value) * (geo.size.width - 20)))
-                        .gesture(
-                            DragGesture()
-                                .onChanged { v in
-                                    value = max(0, min(1, Double(v.location.x) / Double(geo.size.width)))
-                                }
-                        )
-                }
+                // Thumb
+                Circle()
+                    .fill(.white)
+                    .frame(width: 20, height: 20)
+                    .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
+                    .offset(x: max(0, CGFloat(value) * (geo.size.width - 20)))
+                    .gesture(
+                        DragGesture()
+                            .onChanged { v in
+                                value = max(0, min(1, Double(v.location.x) / Double(geo.size.width)))
+                            }
+                    )
+
+                // Value label (right)
+                Text(displayRating)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .frame(height: 28)
-
-            // Value label (right)
-            Text(displayRating)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(height: 28)
     }

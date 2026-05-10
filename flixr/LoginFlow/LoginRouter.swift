@@ -14,9 +14,11 @@ enum LoginScreen: Hashable {
 
 struct LoginFlowView: View {
     var onComplete: (() -> Void)? = nil
+    @Environment(AuthManager.self) private var auth
     @State private var screen: LoginScreen = .welcome
-    @State private var currentEmail  = ""
-    @State private var currentName   = ""
+    @State private var currentEmail    = ""
+    @State private var currentName     = ""
+    @State private var currentPassword = ""
 
     var body: some View {
         ZStack {
@@ -37,29 +39,39 @@ struct LoginFlowView: View {
             SignInScreen(
                 go: go,
                 initialEmail: currentEmail,
-                onSubmit: { email, _ in currentEmail = email }
+                onSubmit: { email, password in currentEmail = email; currentPassword = password }
             )
         case .signinError:
             SignInScreen(
                 go: go,
                 error: .wrongPassword,
                 initialEmail: currentEmail,
-                onSubmit: { email, _ in currentEmail = email }
+                onSubmit: { email, password in currentEmail = email; currentPassword = password }
             )
         case .signinLocked:
             SignInScreen(
                 go: go,
                 error: .locked,
                 initialEmail: currentEmail,
-                onSubmit: { email, _ in currentEmail = email }
+                onSubmit: { email, password in currentEmail = email; currentPassword = password }
             )
         case .signinLoading:
-            AutoAdvanceLoadingView(title: "Signing you in", sub: "Just a moment…", next: .done, go: go)
+            AsyncLoadingView(title: "Signing you in", sub: "Just a moment…", go: go) {
+                switch await auth.signIn(email: currentEmail, password: currentPassword) {
+                case .success:         return .mainApp
+                case .unverified:      return .verify
+                case .wrongPassword:   return .signinError
+                case .tooManyAttempts: return .signinLocked
+                case .networkError:    return .networkError
+                }
+            }
 
         case .signup:
             SignUpScreen(
                 go: go,
-                onSubmit: { email, name in currentEmail = email; currentName = name }
+                onSubmit: { email, name, password in
+                    currentEmail = email; currentName = name; currentPassword = password
+                }
             )
         case .signupExists:
             SignUpScreen(
@@ -67,10 +79,18 @@ struct LoginFlowView: View {
                 error: .emailExists,
                 initialEmail: currentEmail,
                 initialName: currentName,
-                onSubmit: { email, name in currentEmail = email; currentName = name }
+                onSubmit: { email, name, password in
+                    currentEmail = email; currentName = name; currentPassword = password
+                }
             )
         case .signupLoading:
-            AutoAdvanceLoadingView(title: "Creating your account", sub: "Sending verification email…", next: .verify, go: go)
+            AsyncLoadingView(title: "Creating your account", sub: "Sending verification email…", go: go) {
+                switch await auth.signUp(email: currentEmail, password: currentPassword, name: currentName) {
+                case .success:     return .verify
+                case .emailExists: return .signupExists
+                case .networkError: return .networkError
+                }
+            }
 
         case .verify:
             VerifyEmailScreen(go: go, userEmail: currentEmail)
@@ -80,9 +100,12 @@ struct LoginFlowView: View {
             VerifyEmailScreen(go: go, userEmail: currentEmail, isVerified: true)
 
         case .forgot:
-            ForgotScreen(go: go, userEmail: currentEmail)
+            ForgotScreen(go: go, userEmail: currentEmail, onSubmit: { email in currentEmail = email })
         case .forgotLoading:
-            AutoAdvanceLoadingView(title: "Sending reset link", sub: "Hold tight…", next: .forgotSent, go: go)
+            AsyncLoadingView(title: "Sending reset link", sub: "Hold tight…", go: go) {
+                await auth.sendPasswordReset(email: currentEmail)
+                return .forgotSent
+            }
         case .forgotSent:
             ForgotScreen(go: go, isSent: true, userEmail: currentEmail)
 

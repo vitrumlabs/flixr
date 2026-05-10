@@ -6,6 +6,9 @@ import GoogleSignIn
 import AuthenticationServices
 import CryptoKit
 
+enum EmailSignInResult { case success, unverified, wrongPassword, tooManyAttempts, networkError }
+enum EmailSignUpResult  { case success, emailExists, networkError }
+
 @Observable
 class AuthManager: NSObject {
     var user: FirebaseAuth.User? = nil
@@ -14,15 +17,13 @@ class AuthManager: NSObject {
     var authError: String? = nil
 
     private var currentNonce: String?
+    private var authStateHandle: AuthStateDidChangeListenerHandle?
 
     override init() {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
         super.init()
-        user = Auth.auth().currentUser
-        Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            self?.user = user
+        user = Auth.auth().currentUser?.isEmailVerified == true ? Auth.auth().currentUser : nil
+        authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, u in
+            self?.user = u?.isEmailVerified == true ? u : nil
         }
     }
 
@@ -79,10 +80,12 @@ class AuthManager: NSObject {
             guard let clientID = FirebaseApp.app()?.options.clientID else {
                 throw AuthError.googleNotConfigured
             }
-            guard
-                let scene = await UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                let rootVC = await scene.windows.first?.rootViewController
-            else { throw AuthError.missingCredential }
+            let rootVC = try await MainActor.run {
+                guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                      let rootVC = scene.windows.first?.rootViewController
+                else { throw AuthError.missingCredential }
+                return rootVC
+            }
 
             GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootVC)
@@ -102,6 +105,61 @@ class AuthManager: NSObject {
         isLoading = false
     }
 
+    // MARK: - Email Auth
+
+    func signIn(email: String, password: String) async -> EmailSignInResult {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let result = try await Auth.auth().signIn(withEmail: email, password: password)
+            return result.user.isEmailVerified ? .success : .unverified
+        } catch let error as NSError {
+            let code = error.code
+            if [AuthErrorCode.wrongPassword.rawValue,
+                AuthErrorCode.invalidCredential.rawValue,
+                AuthErrorCode.userNotFound.rawValue,
+                AuthErrorCode.invalidEmail.rawValue].contains(code) { return .wrongPassword }
+            if [AuthErrorCode.tooManyRequests.rawValue,
+                AuthErrorCode.userDisabled.rawValue].contains(code) { return .tooManyAttempts }
+            return .networkError
+        }
+    }
+
+    func signUp(email: String, password: String, name: String) async -> EmailSignUpResult {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let result = try await Auth.auth().createUser(withEmail: email, password: password)
+            let req = result.user.createProfileChangeRequest()
+            req.displayName = name
+            try? await req.commitChanges()
+            try? await result.user.sendEmailVerification()
+            await createProfileIfNeeded(result.user, isNewUser: true, name: name)
+            return .success
+        } catch let error as NSError {
+            return error.code == AuthErrorCode.emailAlreadyInUse.rawValue ? .emailExists : .networkError
+        }
+    }
+
+    func sendPasswordReset(email: String) async {
+        isLoading = true
+        defer { isLoading = false }
+        try? await Auth.auth().sendPasswordReset(withEmail: email)
+    }
+
+    func resendVerificationEmail() async {
+        try? await Auth.auth().currentUser?.sendEmailVerification()
+    }
+
+    func checkEmailVerified() async -> Bool {
+        try? await Auth.auth().currentUser?.reload()
+        return Auth.auth().currentUser?.isEmailVerified == true
+    }
+
+    func acceptCurrentUser() {
+        user = Auth.auth().currentUser
+    }
+
     // MARK: - Sign Out
 
     func signOut() {
@@ -116,19 +174,20 @@ class AuthManager: NSObject {
 
     // MARK: - Firestore Profile
 
-    private func createProfileIfNeeded(_ user: FirebaseAuth.User, isNewUser: Bool) async {
+    private func createProfileIfNeeded(_ user: FirebaseAuth.User, isNewUser: Bool, name: String = "") async {
         guard isNewUser else { return }
         let db = Firestore.firestore()
         try? await db.collection("users").document(user.uid).setData([
             "uid": user.uid,
             "email": user.email ?? "",
-            "displayName": user.displayName ?? "",
+            "displayName": name.isEmpty ? (user.displayName ?? "") : name,
             "photoURL": user.photoURL?.absoluteString ?? "",
             "createdAt": FieldValue.serverTimestamp(),
             "watchlist": [],
             "liked": [],
             "skipped": [],
             "filters": ["genres": [], "decade": "", "minRating": 0],
+            "isFlixrPlus": false,
         ])
     }
 }
@@ -188,9 +247,10 @@ private class AppleSignInDelegate: NSObject,
     }
 
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow } ?? UIWindow()
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        if let window = scenes.flatMap({ $0.windows }).first(where: { $0.isKeyWindow }) { return window }
+        if let window = scenes.first?.windows.first { return window }
+        guard let scene = scenes.first else { fatalError("No window scene available") }
+        return UIWindow(windowScene: scene)
     }
 }

@@ -96,7 +96,7 @@ struct SignInScreen: View {
 
                     FlxButton(title: "Sign In", variant: .primary, icon: "arrow.right", isDisabled: isLocked) {
                         onSubmit(email, password)
-                        go(isWrong ? .signin : .signinLoading)
+                        go(.signinLoading)
                     }
 
                     Spacer(minLength: 40)
@@ -118,7 +118,7 @@ struct SignUpScreen: View {
     var error: SignUpError? = nil
     var initialEmail: String = ""
     var initialName: String = ""
-    var onSubmit: (String, String) -> Void = { _, _ in }
+    var onSubmit: (String, String, String) -> Void = { _, _, _ in }
 
     @State private var name: String
     @State private var email: String
@@ -130,7 +130,7 @@ struct SignUpScreen: View {
         error: SignUpError? = nil,
         initialEmail: String = "",
         initialName: String = "",
-        onSubmit: @escaping (String, String) -> Void = { _, _ in }
+        onSubmit: @escaping (String, String, String) -> Void = { _, _, _ in }
     ) {
         self.go = go
         self.error = error
@@ -209,7 +209,7 @@ struct SignUpScreen: View {
                     Spacer().frame(height: 32)
 
                     FlxButton(title: "Create Account", variant: .primary, icon: "arrow.right") {
-                        onSubmit(email, name)
+                        onSubmit(email, name, password)
                         go(emailExists ? .signup : .signupLoading)
                     }
 
