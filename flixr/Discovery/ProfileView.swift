@@ -3,6 +3,8 @@ import SwiftUI
 // MARK: - Screen 23: Profile
 
 struct ProfileView: View {
+    @Environment(AuthManager.self) private var auth
+
     private let stats: [(String, String)] = [
         ("Swiped",  "1,284"),
         ("Liked",   "312"),
@@ -197,7 +199,7 @@ struct ProfileView: View {
                         .padding(.bottom, 12)
 
                         // Sign out
-                        Button(action: {}) {
+                        Button(action: { auth.signOut() }) {
                             Text("Sign out")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(Color.dFg3)
