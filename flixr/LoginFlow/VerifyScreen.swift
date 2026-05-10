@@ -44,15 +44,22 @@ struct VerifyEmailScreen: View {
 
                 Group {
                     if isVerified {
-                        Text("You're all set\(userEmail.isEmpty ? "." : ", **\(userEmail)**.")")
+                        if userEmail.isEmpty {
+                            Text("You're all set.")
+                        } else {
+                            Text("You're all set, ") + Text(userEmail).bold() + Text(".")
+                        }
                     } else {
-                        Text("We sent a verification link\(userEmail.isEmpty ? "." : " to **\(userEmail)**.")  Click it, then come back here.")
+                        if userEmail.isEmpty {
+                            Text("We sent a verification link. Click it, then come back here.")
+                        } else {
+                            Text("We sent a verification link to ") + Text(userEmail).bold() + Text(". Click it, then come back here.")
+                        }
                     }
                 }
                 .font(.system(size: 16))
                 .foregroundColor(.fg2)
                 .lineSpacing(2)
-                .tint(.white)
                 .padding(.top, 14)
                 .padding(.bottom, 24)
 
@@ -101,7 +108,7 @@ struct VerifyEmailScreen: View {
                 }
 
                 if isVerified {
-                    FlxButton(title: "Continue", variant: .primary, icon: "arrow.right") { go(.done) }
+                    FlxButton(title: "Let's go", variant: .primary, icon: "arrow.right") { go(.mainApp) }
                 }
 
                 Spacer(minLength: 0)
