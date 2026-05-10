@@ -13,6 +13,15 @@ struct VerifyEmailScreen: View {
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
+    private func boldEmail(before: String, after: String) -> AttributedString {
+        var result = AttributedString(before)
+        var bold = AttributedString(userEmail)
+        bold.swiftUI.font = .system(size: 16, weight: .bold)
+        result += bold
+        result += AttributedString(after)
+        return result
+    }
+
     var body: some View {
         ScreenShell(dim: 0.7) {
             VStack(alignment: .leading, spacing: 0) {
@@ -47,13 +56,13 @@ struct VerifyEmailScreen: View {
                         if userEmail.isEmpty {
                             Text("You're all set.")
                         } else {
-                            Text("You're all set, ") + Text(userEmail).bold() + Text(".")
+                            Text(boldEmail(before: "You're all set, ", after: "."))
                         }
                     } else {
                         if userEmail.isEmpty {
                             Text("We sent a verification link. Click it, then come back here.")
                         } else {
-                            Text("We sent a verification link to ") + Text(userEmail).bold() + Text(". Click it, then come back here.")
+                            Text(boldEmail(before: "We sent a verification link to ", after: ". Click it, then come back here."))
                         }
                     }
                 }

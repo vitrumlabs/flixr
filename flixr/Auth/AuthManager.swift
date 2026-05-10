@@ -17,14 +17,12 @@ class AuthManager: NSObject {
     var authError: String? = nil
 
     private var currentNonce: String?
+    private var authStateHandle: AuthStateDidChangeListenerHandle?
 
     override init() {
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
         super.init()
         user = Auth.auth().currentUser?.isEmailVerified == true ? Auth.auth().currentUser : nil
-        Auth.auth().addStateDidChangeListener { [weak self] _, u in
+        authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, u in
             self?.user = u?.isEmailVerified == true ? u : nil
         }
     }
@@ -82,10 +80,12 @@ class AuthManager: NSObject {
             guard let clientID = FirebaseApp.app()?.options.clientID else {
                 throw AuthError.googleNotConfigured
             }
-            guard
-                let scene = await UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                let rootVC = await scene.windows.first?.rootViewController
-            else { throw AuthError.missingCredential }
+            let rootVC = try await MainActor.run {
+                guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                      let rootVC = scene.windows.first?.rootViewController
+                else { throw AuthError.missingCredential }
+                return rootVC
+            }
 
             GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootVC)
@@ -187,6 +187,7 @@ class AuthManager: NSObject {
             "liked": [],
             "skipped": [],
             "filters": ["genres": [], "decade": "", "minRating": 0],
+            "isFlixrPlus": false,
         ])
     }
 }
@@ -246,9 +247,10 @@ private class AppleSignInDelegate: NSObject,
     }
 
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow } ?? UIWindow()
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        if let window = scenes.flatMap({ $0.windows }).first(where: { $0.isKeyWindow }) { return window }
+        if let window = scenes.first?.windows.first { return window }
+        guard let scene = scenes.first else { fatalError("No window scene available") }
+        return UIWindow(windowScene: scene)
     }
 }
