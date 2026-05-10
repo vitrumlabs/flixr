@@ -11,6 +11,7 @@ flixr_extracted/
 
 # Xcode
 *.xcuserstate
+xcuserdata/
 *.xccheckout
 *.moved-aside
 DerivedData/
