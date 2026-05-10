@@ -1,11 +1,14 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(AuthManager.self) private var auth
     @State private var showDiscovery = false
+
+    private var isLoggedIn: Bool { showDiscovery || auth.user != nil }
 
     var body: some View {
         ZStack {
-            if showDiscovery {
+            if isLoggedIn {
                 DiscoveryFlowView()
                     .transition(.opacity)
             } else {
@@ -15,7 +18,7 @@ struct ContentView: View {
                 .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.35), value: showDiscovery)
+        .animation(.easeInOut(duration: 0.35), value: isLoggedIn)
     }
 }
 

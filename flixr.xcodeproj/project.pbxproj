@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1CDDF363B65A665EA5B9A741 /* Pods_flixr.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD639FEF12B150E851EFBBE5 /* Pods_flixr.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		46B640F32FACA4C400E34B1A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,14 +28,30 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2C65BE7D9B37AE0B9CB49D54 /* Pods-flixr.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-flixr.debug.xcconfig"; path = "Target Support Files/Pods-flixr/Pods-flixr.debug.xcconfig"; sourceTree = "<group>"; };
 		46B640E32FACA4C100E34B1A /* flixr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = flixr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		46B640F22FACA4C400E34B1A /* flixrTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = flixrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		46B640FC2FACA4C400E34B1A /* flixrUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = flixrUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F43225FB9B57A859DA7DC34 /* Pods-flixr.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-flixr.release.xcconfig"; path = "Target Support Files/Pods-flixr/Pods-flixr.release.xcconfig"; sourceTree = "<group>"; };
+		BD639FEF12B150E851EFBBE5 /* Pods_flixr.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_flixr.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		467077702FB0ACA90094EA73 /* Exceptions for "flixr" folder in "flixr" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 46B640E22FACA4C100E34B1A /* flixr */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		46B640E52FACA4C100E34B1A /* flixr */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				467077702FB0ACA90094EA73 /* Exceptions for "flixr" folder in "flixr" target */,
+			);
 			path = flixr;
 			sourceTree = "<group>";
 		};
@@ -52,6 +72,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1CDDF363B65A665EA5B9A741 /* Pods_flixr.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,6 +93,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0BF8A13F9C804B880AE440EC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				BD639FEF12B150E851EFBBE5 /* Pods_flixr.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		36C64B4CA3DBE4AC6335CFBF /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				2C65BE7D9B37AE0B9CB49D54 /* Pods-flixr.debug.xcconfig */,
+				7F43225FB9B57A859DA7DC34 /* Pods-flixr.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		46B640DA2FACA4C100E34B1A = {
 			isa = PBXGroup;
 			children = (
@@ -79,6 +117,8 @@
 				46B640F52FACA4C400E34B1A /* flixrTests */,
 				46B640FF2FACA4C400E34B1A /* flixrUITests */,
 				46B640E42FACA4C100E34B1A /* Products */,
+				36C64B4CA3DBE4AC6335CFBF /* Pods */,
+				0BF8A13F9C804B880AE440EC /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -99,9 +139,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 46B641062FACA4C400E34B1A /* Build configuration list for PBXNativeTarget "flixr" */;
 			buildPhases = (
+				40DA48CA60D199D273586183 /* [CP] Check Pods Manifest.lock */,
 				46B640DF2FACA4C100E34B1A /* Sources */,
 				46B640E02FACA4C100E34B1A /* Frameworks */,
 				46B640E12FACA4C100E34B1A /* Resources */,
+				8C25F26797B32F149CA5A1A1 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -111,8 +153,6 @@
 				46B640E52FACA4C100E34B1A /* flixr */,
 			);
 			name = flixr;
-			packageProductDependencies = (
-			);
 			productName = flixr;
 			productReference = 46B640E32FACA4C100E34B1A /* flixr.app */;
 			productType = "com.apple.product-type.application";
@@ -134,8 +174,6 @@
 				46B640F52FACA4C400E34B1A /* flixrTests */,
 			);
 			name = flixrTests;
-			packageProductDependencies = (
-			);
 			productName = flixrTests;
 			productReference = 46B640F22FACA4C400E34B1A /* flixrTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -157,8 +195,6 @@
 				46B640FF2FACA4C400E34B1A /* flixrUITests */,
 			);
 			name = flixrUITests;
-			packageProductDependencies = (
-			);
 			productName = flixrUITests;
 			productReference = 46B640FC2FACA4C400E34B1A /* flixrUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -230,6 +266,52 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		40DA48CA60D199D273586183 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-flixr-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8C25F26797B32F149CA5A1A1 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		46B640DF2FACA4C100E34B1A /* Sources */ = {
@@ -392,14 +474,17 @@
 		};
 		46B641072FACA4C400E34B1A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2C65BE7D9B37AE0B9CB49D54 /* Pods-flixr.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = flixr/flixr.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Z2FJU6P53W;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = flixr/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -424,14 +509,17 @@
 		};
 		46B641082FACA4C400E34B1A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7F43225FB9B57A859DA7DC34 /* Pods-flixr.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = flixr/flixr.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Z2FJU6P53W;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = flixr/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
