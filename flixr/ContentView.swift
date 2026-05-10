@@ -5,7 +5,10 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            if auth.user != nil {
+            if auth.isSigningOut {
+                LoadingView(title: "Signing out", sub: "See you next time.")
+                    .transition(.opacity)
+            } else if auth.user != nil {
                 DiscoveryFlowView()
                     .transition(.opacity)
             } else {
@@ -13,6 +16,7 @@ struct ContentView: View {
                     .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.35), value: auth.isSigningOut)
         .animation(.easeInOut(duration: 0.35), value: auth.user == nil)
     }
 }

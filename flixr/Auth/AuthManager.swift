@@ -10,6 +10,7 @@ import CryptoKit
 class AuthManager: NSObject {
     var user: FirebaseAuth.User? = nil
     var isLoading = false
+    var isSigningOut = false
     var authError: String? = nil
 
     private var currentNonce: String?
@@ -104,8 +105,13 @@ class AuthManager: NSObject {
     // MARK: - Sign Out
 
     func signOut() {
-        try? Auth.auth().signOut()
-        GIDSignIn.sharedInstance.signOut()
+        Task {
+            isSigningOut = true
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            try? Auth.auth().signOut()
+            GIDSignIn.sharedInstance.signOut()
+            isSigningOut = false
+        }
     }
 
     // MARK: - Firestore Profile
