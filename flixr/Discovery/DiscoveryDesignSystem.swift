@@ -14,8 +14,14 @@ struct BackdropArt: View {
     var movie: Movie
     var aspectRatio: CGFloat = 16 / 9
 
+    private var imageURL: URL? {
+        if let path = movie.backdropPath { return TMDBImage.backdropURL(path) }
+        if let path = movie.posterPath   { return TMDBImage.posterURL(path, width: 500) }
+        return nil
+    }
+
     var body: some View {
-        if let path = movie.posterPath, let url = TMDBImage.posterURL(path, width: 500) {
+        if let url = imageURL {
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let image):

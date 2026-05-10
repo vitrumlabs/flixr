@@ -33,7 +33,8 @@ struct MovieSnapshot {
             platforms: [],
             palette: MoviePalette.forGenre(genres.first ?? ""),
             synopsis: "",
-            posterPath: posterPath
+            posterPath: posterPath,
+            backdropPath: nil
         )
     }
 

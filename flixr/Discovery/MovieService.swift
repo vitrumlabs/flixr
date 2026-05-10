@@ -19,6 +19,10 @@ enum TMDBImage {
     static func posterURL(_ path: String, width: Int = 500) -> URL? {
         URL(string: "\(base)w\(width)\(path)")
     }
+
+    static func backdropURL(_ path: String) -> URL? {
+        URL(string: "\(base)w1280\(path)")
+    }
 }
 
 // MARK: - Service
@@ -82,9 +86,10 @@ extension Movie {
         self.language    = Self.languageName(langCode)
         self.cast        = []
         self.platforms   = []
-        self.palette     = MoviePalette.forGenre(primary)
-        self.synopsis    = d["overview"] as? String ?? ""
-        self.posterPath  = d["poster_path"] as? String
+        self.palette      = MoviePalette.forGenre(primary)
+        self.synopsis     = d["overview"] as? String ?? ""
+        self.posterPath   = d["poster_path"] as? String
+        self.backdropPath = nil
     }
 }
 
@@ -129,9 +134,10 @@ extension Movie {
         self.language    = Self.languageName(langCode)
         self.cast        = castNames
         self.platforms   = []
-        self.palette     = MoviePalette.forGenre(primary)
-        self.synopsis    = d["overview"] as? String ?? ""
-        self.posterPath  = d["poster_path"] as? String
+        self.palette      = MoviePalette.forGenre(primary)
+        self.synopsis     = d["overview"] as? String ?? ""
+        self.posterPath   = d["poster_path"] as? String
+        self.backdropPath = d["backdrop_path"] as? String
     }
 }
 

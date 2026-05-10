@@ -20,7 +20,8 @@ struct Movie: Identifiable, Equatable {
     let platforms: [String]
     let palette: MoviePalette
     let synopsis: String
-    let posterPath: String?   // TMDB path, e.g. "/abc.jpg"
+    let posterPath: String?    // TMDB path, e.g. "/abc.jpg"
+    let backdropPath: String?  // TMDB landscape backdrop path, only from detail endpoint
 
     static func == (lhs: Movie, rhs: Movie) -> Bool { lhs.id == rhs.id }
 }
