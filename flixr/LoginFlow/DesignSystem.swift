@@ -183,41 +183,13 @@ private struct FlxButtonStyle: ButtonStyle {
     var borderW: CGFloat { (variant == .ghost || variant == .google) ? 0 : 1 }
 }
 
-// MARK: - Google "G" icon (four-colour brand mark)
+// MARK: - Google "G" icon (official asset from GoogleSignIn SDK)
 
 struct GoogleGIcon: View {
     var body: some View {
-        Canvas { ctx, size in
-            let cx = size.width / 2, cy = size.height / 2
-            let R = min(cx, cy) - 0.5   // outer radius
-            let r = R * 0.55            // inner radius (ring thickness = R - r)
-
-            // Filled ring arc segment: clockwise: false = visually clockwise in SwiftUI
-            func seg(_ hex: String, _ start: Double, _ end: Double) {
-                var p = Path()
-                let c = CGPoint(x: cx, y: cy)
-                p.addArc(center: c, radius: R,
-                         startAngle: .degrees(start), endAngle: .degrees(end), clockwise: false)
-                p.addArc(center: c, radius: r,
-                         startAngle: .degrees(end), endAngle: .degrees(start), clockwise: true)
-                p.closeSubpath()
-                ctx.fill(p, with: .color(Color(hex: hex)))
-            }
-
-            // 0° = right (3 o'clock / bar position); angles increase clockwise on screen
-            // Gap of ~40° at the right where the horizontal bar sits
-            seg("EA4335", 20,  95)  // Red    – right side below bar → bottom
-            seg("FBBC05", 95,  195) // Yellow – bottom → lower-left
-            seg("34A853", 195, 285) // Green  – lower-left → upper-left
-            seg("4285F4", 285, 340) // Blue   – upper-left → upper-right
-
-            // Horizontal bar (blue) fills the gap at the right-centre
-            let h = R - r
-            ctx.fill(
-                Path(CGRect(x: cx - 1, y: cy - h / 2, width: R + 1, height: h)),
-                with: .color(Color(hex: "4285F4"))
-            )
-        }
+        Image("GoogleG")
+            .resizable()
+            .scaledToFit()
     }
 }
 
