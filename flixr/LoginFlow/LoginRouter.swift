@@ -6,12 +6,14 @@ enum LoginScreen: Hashable {
     case signup, signupExists, signupLoading
     case verify, verifyError, verifyOk
     case forgot, forgotLoading, forgotSent
-    case swipe, swipeLoading   // kept for future use, not in active flow
+    case swipe, swipeLoading
     case done
     case networkError, serverError
+    case mainApp
 }
 
 struct LoginFlowView: View {
+    var onComplete: (() -> Void)? = nil
     @State private var screen: LoginScreen = .welcome
     @State private var currentEmail  = ""
     @State private var currentName   = ""
@@ -96,10 +98,17 @@ struct LoginFlowView: View {
             ErrorScreen(go: go, kind: .network)
         case .serverError:
             ErrorScreen(go: go, kind: .server)
+
+        case .mainApp:
+            Color.clear.onAppear { onComplete?() }
         }
     }
 
     private func go(_ s: LoginScreen) {
-        screen = s
+        if s == .mainApp {
+            onComplete?()
+        } else {
+            screen = s
+        }
     }
 }
