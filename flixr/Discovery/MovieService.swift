@@ -56,6 +56,23 @@ struct MovieService {
         let results = root["results"] as? [[String: Any]] ?? []
         return results.compactMap { Movie(tmdb: $0) }
     }
+
+    func discover(filters: MovieFilters, page: Int = 1) async throws -> [Movie] {
+        var payload: [String: Any] = [
+            "page": page,
+            "sortBy": filters.sortBy,
+            "minRating": filters.minRating,
+            "genres": Array(filters.genres),
+            "includeAdult": filters.includeAdult,
+        ]
+        if let decade = filters.decade {
+            payload["decade"] = decade
+        }
+        let result = try await functions.httpsCallable("discoverMovies").call(payload)
+        let root = result.data as? [String: Any] ?? [:]
+        let results = root["results"] as? [[String: Any]] ?? []
+        return results.compactMap { Movie(tmdb: $0) }
+    }
 }
 
 // MARK: - Movie ← TMDB list item (getPopularMovies / searchMovies)

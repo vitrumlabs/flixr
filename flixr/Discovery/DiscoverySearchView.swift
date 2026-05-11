@@ -34,9 +34,10 @@ struct DiscoverySearchView: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
-                            .frame(width: 40, height: 40)
+                            .frame(width: 44, height: 44)
                     }
                     .glassEffect(in: Circle())
+                    .accessibilityLabel("Close")
 
                     SearchField(text: $query, isFocused: $isSearchFocused)
                 }
@@ -334,6 +335,8 @@ private struct SearchField: View {
                         .background(Color.white.opacity(0.18))
                         .clipShape(Circle())
                 }
+                .frame(minWidth: 44, minHeight: 44)
+                .accessibilityLabel("Clear search")
             }
         }
         .padding(.horizontal, 14)
@@ -373,6 +376,7 @@ private struct ScopeChip: View {
                 .overlay(Capsule().strokeBorder(isActive ? Color.clear : Color.dLine, lineWidth: 1))
                 .shadow(color: isActive ? Color.flxRed.opacity(0.32) : .clear, radius: 7, y: 3)
         }
+        .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
 

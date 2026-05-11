@@ -58,6 +58,7 @@ struct MovieDetailView: View {
                     .frame(width: 56, height: 56)
             }
             .glassEffect(in: Circle())
+            .accessibilityLabel("Play trailer")
             .frame(maxHeight: .infinity)
 
         }
@@ -69,9 +70,10 @@ struct MovieDetailView: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
             }
             .glassEffect(in: Circle())
+            .accessibilityLabel("Close")
             .padding(.top, 52)
             .padding(.leading, 16)
         }
@@ -173,6 +175,7 @@ struct MovieDetailView: View {
                     .clipShape(Capsule())
                     .overlay(Capsule().strokeBorder(Color.dLine, lineWidth: 1))
             }
+            .accessibilityLabel(inWatchlist ? "Remove from watchlist" : "Add to watchlist")
         }
     }
 

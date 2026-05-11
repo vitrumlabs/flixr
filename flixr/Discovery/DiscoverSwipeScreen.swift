@@ -3,9 +3,11 @@ import SwiftUI
 // MARK: - Screen 18: Discover · Swipe
 
 struct DiscoverSwipeScreen: View {
+    var filters: MovieFilters
     var onOpenFilters: () -> Void
+    var onOpenSearch: () -> Void
     var onOpenDetail: (Movie) -> Void
-    var onSearch: () -> Void
+    var onShuffle: () -> Void
 
     @Environment(UserLibrary.self) private var library
 
@@ -13,6 +15,8 @@ struct DiscoverSwipeScreen: View {
     @State private var cardIndex = 0
     @State private var isLoading = true
     @State private var fetchError = false
+    @State private var cardFlyDirection: CGFloat? = nil
+    @State private var shuffleTrigger = 0
 
     private var currentDeck: [Movie] { Array(movies.dropFirst(cardIndex)) }
 
@@ -26,7 +30,7 @@ struct DiscoverSwipeScreen: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                DiscoveryTopBar(onFilter: onOpenFilters)
+                DiscoveryTopBar(onSearch: onOpenSearch)
                     .padding(.top, 4)
 
                 Spacer().frame(height: 16)
@@ -34,16 +38,17 @@ struct DiscoverSwipeScreen: View {
                 GeometryReader { geo in
                     Group {
                         if isLoading {
-                            loadingCard(width: geo.size.width - 28)
+                            loadingCard(width: geo.size.width - 28, maxHeight: geo.size.height)
                         } else if fetchError || movies.isEmpty {
-                            errorCard(width: geo.size.width - 28)
+                            errorCard(width: geo.size.width - 28, maxHeight: geo.size.height)
                         } else if currentDeck.isEmpty {
-                            doneCard(width: geo.size.width - 28)
+                            doneCard(width: geo.size.width - 28, maxHeight: geo.size.height)
                         } else {
                             CardStackView(
                                 deck: currentDeck,
                                 width: geo.size.width - 28,
                                 availableHeight: geo.size.height,
+                                flyDirection: $cardFlyDirection,
                                 onLike: { movie in
                                     advance()
                                     Task { await library.like(movie) }
@@ -59,41 +64,55 @@ struct DiscoverSwipeScreen: View {
                     }
                 }
 
-                // Action buttons
-                HStack(spacing: 28) {
-                    ActionButton(kind: .skip, size: 72) {
-                        guard let movie = currentDeck.first else { return }
-                        advance()
-                        Task { await library.skip(movie) }
+                HStack(spacing: 16) {
+                    ActionButton(kind: .skip, size: 84) {
+                        guard !currentDeck.isEmpty else { return }
+                        cardFlyDirection = -1
                     }
-                    .disabled(currentDeck.isEmpty || isLoading)
+                    .disabled(currentDeck.isEmpty || isLoading || cardFlyDirection != nil)
 
-                    Button(action: onSearch) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 18, weight: .medium))
+                    Button(action: onOpenFilters) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 20, weight: .medium))
                             .foregroundColor(.white)
                             .frame(width: 52, height: 52)
                     }
+                    .buttonStyle(.plain)
                     .glassEffect(in: Circle())
+                    .accessibilityLabel("Open Filters")
 
-                    ActionButton(kind: .like, size: 72) {
-                        guard let movie = currentDeck.first else { return }
-                        advance()
-                        Task { await library.like(movie) }
+                    Button(action: { shuffleTrigger += 1; onShuffle() }) {
+                        Image(systemName: "shuffle")
+                            .symbolEffect(.bounce, value: shuffleTrigger)
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 52, height: 52)
                     }
-                    .disabled(currentDeck.isEmpty || isLoading)
+                    .buttonStyle(.plain)
+                    .glassEffect(in: Circle())
+                    .accessibilityLabel("Shuffle")
+                    .sensoryFeedback(.impact(weight: .medium), trigger: shuffleTrigger)
+
+                    ActionButton(kind: .like, size: 84) {
+                        guard !currentDeck.isEmpty else { return }
+                        cardFlyDirection = 1
+                    }
+                    .disabled(currentDeck.isEmpty || isLoading || cardFlyDirection != nil)
                 }
                 .padding(.top, 20)
-                .padding(.bottom, 116)
+                .padding(.bottom, 20)
             }
         }
         .preferredColorScheme(.dark)
         .task { await loadMovies() }
+        .onChange(of: filters) { _, _ in
+            cardFlyDirection = nil
+            Task { await loadMovies() }
+        }
     }
 
     private func advance() {
         withAnimation(.easeOut(duration: 0.2)) { cardIndex += 1 }
-        // Pre-fetch next page when near the end
         if movies.count - cardIndex < 5 {
             Task { await loadMore() }
         }
@@ -102,8 +121,11 @@ struct DiscoverSwipeScreen: View {
     private func loadMovies() async {
         isLoading = true
         fetchError = false
+        cardIndex = 0
         do {
-            movies = try await MovieService.shared.fetchPopular(page: 1)
+            movies = filters.isActive
+                ? try await MovieService.shared.discover(filters: filters, page: 1)
+                : try await MovieService.shared.fetchPopular(page: 1)
         } catch {
             fetchError = true
         }
@@ -112,25 +134,30 @@ struct DiscoverSwipeScreen: View {
 
     private func loadMore() async {
         let nextPage = (movies.count / 20) + 1
-        guard let more = try? await MovieService.shared.fetchPopular(page: nextPage) else { return }
-        movies.append(contentsOf: more.filter { !movies.map(\.id).contains($0.id) })
+        if filters.isActive {
+            guard let more = try? await MovieService.shared.discover(filters: filters, page: nextPage) else { return }
+            movies.append(contentsOf: more.filter { !movies.map(\.id).contains($0.id) })
+        } else {
+            guard let more = try? await MovieService.shared.fetchPopular(page: nextPage) else { return }
+            movies.append(contentsOf: more.filter { !movies.map(\.id).contains($0.id) })
+        }
     }
 
     // MARK: - State cards
 
-    private func loadingCard(width: CGFloat) -> some View {
+    private func loadingCard(width: CGFloat, maxHeight: CGFloat) -> some View {
         VStack(spacing: 16) {
             ProgressView().tint(.white)
             Text("Finding films for you…")
                 .font(.system(size: 15))
                 .foregroundColor(.dFg3)
         }
-        .frame(width: width, height: width / 0.66)
+        .frame(width: width, height: min(width / 0.66, maxHeight))
         .background(Color.white.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 22))
     }
 
-    private func errorCard(width: CGFloat) -> some View {
+    private func errorCard(width: CGFloat, maxHeight: CGFloat) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "wifi.slash")
                 .font(.system(size: 32))
@@ -141,13 +168,14 @@ struct DiscoverSwipeScreen: View {
             Button("Try again") { Task { await loadMovies() } }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.flxRed)
+                .frame(minWidth: 44, minHeight: 44)
         }
-        .frame(width: width, height: width / 0.66)
+        .frame(width: width, height: min(width / 0.66, maxHeight))
         .background(Color.white.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 22))
     }
 
-    private func doneCard(width: CGFloat) -> some View {
+    private func doneCard(width: CGFloat, maxHeight: CGFloat) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle")
                 .font(.system(size: 36))
@@ -158,8 +186,9 @@ struct DiscoverSwipeScreen: View {
             Button("Load more") { Task { await loadMore() } }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.flxRed)
+                .frame(minWidth: 44, minHeight: 44)
         }
-        .frame(width: width, height: width / 0.66)
+        .frame(width: width, height: min(width / 0.66, maxHeight))
         .background(Color.white.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 22))
     }
@@ -168,14 +197,17 @@ struct DiscoverSwipeScreen: View {
 // MARK: - Card stack
 
 private struct CardStackView: View {
-    var deck: [Movie]           // deck[0] is front card
+    var deck: [Movie]
     var width: CGFloat
     var availableHeight: CGFloat
+    @Binding var flyDirection: CGFloat?
     var onLike: (Movie) -> Void
     var onSkip: (Movie) -> Void
     var onTap: (Movie) -> Void
 
     @State private var dragProgress: CGFloat = 0
+
+    private var cardHeight: CGFloat { min(width / 0.66, availableHeight) }
 
     var body: some View {
         ZStack {
@@ -195,6 +227,7 @@ private struct CardStackView: View {
                     width: width,
                     availableHeight: availableHeight,
                     dragProgress: isFront ? $dragProgress : .constant(0),
+                    flyDirection: isFront ? $flyDirection : .constant(nil),
                     onLike: { onLike(movie) },
                     onSkip: { onSkip(movie) },
                     onTap: { onTap(movie) }
@@ -204,8 +237,9 @@ private struct CardStackView: View {
                 .zIndex(Double(3 - depth))
             }
         }
-        .frame(width: width)
-        .frame(maxHeight: .infinity)
+        // Fixed frame prevents the ZStack from expanding its hit-testing area
+        // beyond the visible card bounds.
+        .frame(width: width, height: cardHeight)
     }
 }
 
@@ -217,13 +251,13 @@ private struct MovieCardView: View {
     var width: CGFloat
     var availableHeight: CGFloat
     @Binding var dragProgress: CGFloat
+    @Binding var flyDirection: CGFloat?
     var onLike: () -> Void
     var onSkip: () -> Void
     var onTap: () -> Void
 
     @State private var dragX: CGFloat = 0
     @State private var dragY: CGFloat = 0
-    @State private var isDragging = false
 
     private var height: CGFloat { min(width / 0.66, availableHeight) }
     private var rotation: Double { Double(dragX) * 0.05 }
@@ -261,6 +295,7 @@ private struct MovieCardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(.top, 32).padding(.leading, 28)
                 .opacity(likeOpacity)
+                .allowsHitTesting(false)
 
             // SKIP stamp
             Text("SKIP")
@@ -272,6 +307,7 @@ private struct MovieCardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 .padding(.top, 32).padding(.trailing, 28)
                 .opacity(skipOpacity)
+                .allowsHitTesting(false)
 
             // Meta block
             VStack(alignment: .leading, spacing: 8) {
@@ -293,32 +329,27 @@ private struct MovieCardView: View {
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 22))
+        // Restrict tap hit area to the visible rounded card shape only.
+        .contentShape(RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
         .shadow(color: .black.opacity(0.7), radius: 24, y: 12)
         .rotationEffect(.degrees(rotation))
         .offset(x: dragX, y: dragY * 0.4)
-        .animation(isDragging ? .none : .spring(response: 0.35, dampingFraction: 0.75), value: dragX)
+        // No implicit animation on dragX — explicit withAnimation blocks handle
+        // snap-back and fly-off so there's no conflict causing erratic motion.
         .gesture(
             isFront
             ? DragGesture()
                 .onChanged { v in
-                    isDragging = true
                     dragX = v.translation.width
                     dragY = v.translation.height
                     dragProgress = dragX / 150
                 }
                 .onEnded { v in
-                    isDragging = false
-                    let threshold = abs(v.translation.width) > 90
+                    let overThreshold = abs(v.translation.width) > 90
                         || abs(v.predictedEndTranslation.width) > 200
-                    if threshold {
-                        let direction: CGFloat = v.translation.width > 0 ? 700 : -700
-                        let liked = direction > 0
-                        withAnimation(.easeOut(duration: 0.28)) { dragX = direction }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
-                            dragX = 0; dragY = 0; dragProgress = 0
-                            if liked { onLike() } else { onSkip() }
-                        }
+                    if overThreshold {
+                        flyOff(toward: v.translation.width > 0 ? 700 : -700)
                     } else {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                             dragX = 0; dragY = 0; dragProgress = 0
@@ -329,6 +360,25 @@ private struct MovieCardView: View {
         )
         .onTapGesture { if abs(dragX) < 6 { onTap() } }
         .allowsHitTesting(isFront)
+        .onChange(of: flyDirection) { _, direction in
+            guard let direction else { return }
+            flyOff(toward: direction > 0 ? 700 : -700, isExternalTrigger: true)
+        }
+        .transition(.identity)
+    }
+
+    private func flyOff(toward target: CGFloat, isExternalTrigger: Bool = false) {
+        let liked = target > 0
+        withAnimation(.easeOut(duration: 0.28)) {
+            dragX = target
+            dragProgress = liked ? 1 : -1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            // Reset the external trigger before firing the callback so the
+            // parent's disabled state lifts and the next card is ready.
+            if isExternalTrigger { flyDirection = nil }
+            if liked { onLike() } else { onSkip() }
+        }
     }
 }
 
