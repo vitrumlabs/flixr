@@ -1,5 +1,21 @@
 import SwiftUI
 
+// MARK: - Filter state
+
+struct MovieFilters: Equatable {
+    var genres: Set<String> = []
+    var decade: String? = nil
+    var sortBy: String = "Popular"
+    var minRating: Double = 0
+    var includeAdult: Bool = false
+
+    var isActive: Bool {
+        !genres.isEmpty || decade != nil || sortBy != "Popular" || minRating > 0 || includeAdult
+    }
+
+    static let `default` = MovieFilters()
+}
+
 // MARK: - Cast member
 
 struct CastMember: Identifiable, Equatable {

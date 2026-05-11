@@ -3,7 +3,8 @@ import SwiftUI
 // MARK: - Per-tab navigation state
 
 private enum DiscoverNav: Equatable {
-    case swipe, search
+    case swipe
+    case search
     case detail(Movie)
 }
 
@@ -12,46 +13,50 @@ private enum WatchlistNav: Equatable {
     case detail(Movie)
 }
 
-// MARK: - Discovery flow — custom tab bar (pill + profile circle)
+// MARK: - Root flow
 
 struct DiscoveryFlowView: View {
     @State private var activeTab: DiscoverTab = .discover
     @State private var discoverNav: DiscoverNav = .swipe
     @State private var watchlistNav: WatchlistNav = .list
     @State private var showFilters = false
-
-    private var showsTabBar: Bool {
-        switch activeTab {
-        case .discover:  return discoverNav == .swipe
-        case .watchlist: return watchlistNav == .list
-        case .profile:   return true
-        }
-    }
+    @State private var activeFilters = MovieFilters.default
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Group {
-                switch activeTab {
-                case .discover:  discoverTab
-                case .watchlist: watchlistTab
-                case .profile:   ProfileView()
-                }
+        TabView(selection: $activeTab) {
+            Tab("Discover", systemImage: "movieclapper", value: DiscoverTab.discover) {
+                discoverTab
+                    .toolbar(discoverNav != .swipe || showFilters ? .hidden : .visible, for: .tabBar)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            if showsTabBar {
-                DiscoveryTabBar(active: activeTab) { tab in
-                    withAnimation(.easeInOut(duration: 0.2)) { activeTab = tab }
-                }
-                .padding(.bottom, 4)
-                .transition(.opacity)
+            Tab("Watchlist", systemImage: "bookmark", value: DiscoverTab.watchlist) {
+                watchlistTab
+                    .toolbar(watchlistNav != .list ? .hidden : .visible, for: .tabBar)
+            }
+            Tab("Profile", systemImage: "person", value: DiscoverTab.profile) {
+                ProfileView()
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: showsTabBar)
+        .tint(.flxRed)
         .preferredColorScheme(.dark)
     }
 
     // MARK: Discover tab
+
+    private func randomizeFilters() {
+        let allGenres = ["Action", "Adventure", "Animation", "Comedy", "Crime",
+                         "Documentary", "Drama", "Fantasy", "History", "Horror",
+                         "Music", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
+        let allDecades: [String?] = [nil, nil, "2020s", "2010s", "2000s", "90s", "80s", "Older"]
+        let allSorts = ["Popular", "Top Rated", "Newest", "Blockbusters"]
+        let ratingOptions: [Double] = [0, 0, 0, 5, 6, 7]
+
+        let genres = Set(allGenres.shuffled().prefix(Int.random(in: 1...3)))
+        let decade = allDecades.randomElement() ?? nil
+        let sortBy = allSorts.randomElement() ?? "Popular"
+        let minRating = ratingOptions.randomElement() ?? 0
+
+        activeFilters = MovieFilters(genres: genres, decade: decade, sortBy: sortBy, minRating: minRating)
+    }
 
     @ViewBuilder
     private var discoverTab: some View {
@@ -59,25 +64,32 @@ struct DiscoveryFlowView: View {
             switch discoverNav {
             case .swipe:
                 DiscoverSwipeScreen(
+                    filters: activeFilters,
                     onOpenFilters: { withAnimation { showFilters = true } },
+                    onOpenSearch: { withAnimation { discoverNav = .search } },
                     onOpenDetail: { movie in withAnimation { discoverNav = .detail(movie) } },
-                    onSearch: { withAnimation { discoverNav = .search } }
+                    onShuffle: { randomizeFilters() }
                 )
-
             case .search:
                 DiscoverySearchView(
                     onClose: { withAnimation { discoverNav = .swipe } },
                     onOpenDetail: { movie in withAnimation { discoverNav = .detail(movie) } }
                 )
-
             case .detail(let movie):
                 MovieDetailView(movie: movie, onClose: { withAnimation { discoverNav = .swipe } })
             }
 
             if showFilters {
-                DiscoveryFiltersSheet(onClose: { withAnimation { showFilters = false } })
-                    .transition(.opacity)
-                    .zIndex(10)
+                DiscoveryFiltersSheet(
+                    initialFilters: activeFilters,
+                    onApply: { newFilters in
+                        activeFilters = newFilters
+                        withAnimation { showFilters = false }
+                    },
+                    onClose: { withAnimation { showFilters = false } }
+                )
+                .transition(.opacity)
+                .zIndex(10)
             }
         }
         .animation(.easeInOut(duration: 0.22), value: discoverNav)
@@ -92,7 +104,6 @@ struct DiscoveryFlowView: View {
             switch watchlistNav {
             case .list:
                 WatchlistView(onOpenDetail: { movie in withAnimation { watchlistNav = .detail(movie) } })
-
             case .detail(let movie):
                 MovieDetailView(movie: movie, onClose: { withAnimation { watchlistNav = .list } })
             }

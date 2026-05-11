@@ -3,16 +3,33 @@ import SwiftUI
 // MARK: - Screen 20: Filters bottom sheet (overlay)
 
 struct DiscoveryFiltersSheet: View {
+    var onApply: (MovieFilters) -> Void
     var onClose: () -> Void
 
-    @State private var selectedGenres: Set<String> = ["Drama", "Sci-Fi"]
-    @State private var selectedDecade = "2020s"
-    @State private var selectedSort = "Popular"
-    @State private var minRating: Double = 0.62
+    @State private var selectedGenres: Set<String>
+    @State private var selectedDecade: String?
+    @State private var selectedSort: String
+    @State private var minRating: Double
+    @State private var includeAdult: Bool
 
-    private let genres     = ["Drama", "Sci-Fi", "Thriller", "Horror", "Comedy", "Romance", "Action", "Western", "Documentary"]
+    private let genres     = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "History", "Horror", "Music", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
     private let decades    = ["2020s", "2010s", "2000s", "90s", "80s", "Older"]
     private let sortLabels = ["Popular", "Top Rated", "Newest", "Blockbusters"]
+
+    init(initialFilters: MovieFilters, onApply: @escaping (MovieFilters) -> Void, onClose: @escaping () -> Void) {
+        self.onApply = onApply
+        self.onClose = onClose
+        _selectedGenres = State(initialValue: initialFilters.genres)
+        _selectedDecade = State(initialValue: initialFilters.decade)
+        _selectedSort   = State(initialValue: initialFilters.sortBy)
+        _minRating      = State(initialValue: initialFilters.minRating / 10)
+        _includeAdult   = State(initialValue: initialFilters.includeAdult)
+    }
+
+    private var currentFilters: MovieFilters {
+        MovieFilters(genres: selectedGenres, decade: selectedDecade, sortBy: selectedSort,
+                     minRating: minRating * 10, includeAdult: includeAdult)
+    }
 
     var body: some View {
         ZStack {
@@ -39,9 +56,15 @@ struct DiscoveryFiltersSheet: View {
                             .font(.flxDisplay(24))
                             .foregroundColor(.white)
                         Spacer()
-                        Button("Reset") {}
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.flxRed)
+                        Button("Reset") {
+                            selectedGenres = []
+                            selectedDecade = nil
+                            selectedSort = "Popular"
+                            minRating = 0
+                            includeAdult = false
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.flxRed)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 18)
@@ -64,7 +87,7 @@ struct DiscoveryFiltersSheet: View {
                             FilterSection(title: "Decade") {
                                 FlexChips(items: decades) { decade in
                                     FilterChip(label: decade, isActive: decade == selectedDecade) {
-                                        selectedDecade = decade
+                                        selectedDecade = (selectedDecade == decade) ? nil : decade
                                     }
                                 }
                             }
@@ -80,6 +103,18 @@ struct DiscoveryFiltersSheet: View {
                             FilterSection(title: "Min rating") {
                                 RatingSlider(value: $minRating)
                             }
+
+                            FilterSection(title: "Content") {
+                                HStack {
+                                    Text("Include adult content")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(Color.dFg2)
+                                    Spacer()
+                                    Toggle("", isOn: $includeAdult)
+                                        .tint(.flxRed)
+                                        .labelsHidden()
+                                }
+                            }
                         }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 22)
@@ -87,9 +122,11 @@ struct DiscoveryFiltersSheet: View {
                     .containerRelativeFrame(.vertical) { h, _ in h * 0.56 }
 
                     // CTA
-                    FlxButton(title: "Show 248 results", variant: .primary, action: onClose)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 28)
+                    FlxButton(title: "Show results", variant: .primary) {
+                        onApply(currentFilters)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 28)
                 }
                 .background(
                     LinearGradient(
@@ -151,39 +188,33 @@ private struct RatingSlider: View {
     }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                // Track background
-                Capsule()
-                    .fill(Color.white.opacity(0.08))
-                    .frame(height: 4)
-
-                // Fill
-                Capsule()
-                    .fill(Color.flxRed)
-                    .frame(width: max(0, CGFloat(value) * geo.size.width), height: 4)
-
-                // Thumb
-                Circle()
-                    .fill(.white)
-                    .frame(width: 20, height: 20)
-                    .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
-                    .offset(x: max(0, CGFloat(value) * (geo.size.width - 20)))
-                    .gesture(
-                        DragGesture()
-                            .onChanged { v in
-                                value = max(0, min(1, Double(v.location.x) / Double(geo.size.width)))
-                            }
-                    )
-
-                // Value label (right)
-                Text(displayRating)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+        VStack(alignment: .trailing, spacing: 8) {
+            Text(displayRating)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(height: 4)
+                    Capsule()
+                        .fill(Color.flxRed)
+                        .frame(width: max(0, CGFloat(value) * geo.size.width), height: 4)
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 20, height: 20)
+                        .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
+                        .offset(x: max(0, CGFloat(value) * (geo.size.width - 20)))
+                        .gesture(
+                            DragGesture()
+                                .onChanged { v in
+                                    value = max(0, min(1, Double(v.location.x) / Double(geo.size.width)))
+                                }
+                        )
+                }
             }
+            .frame(height: 28)
         }
-        .frame(height: 28)
     }
 }
 

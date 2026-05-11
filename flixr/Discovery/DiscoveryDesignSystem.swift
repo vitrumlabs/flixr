@@ -129,22 +129,23 @@ private struct ProceduralPoster: View {
     }
 }
 
-// MARK: - Top app bar (logo + filter button with badge)
+// MARK: - Top app bar (logo + search button)
 
 struct DiscoveryTopBar: View {
-    var onFilter: () -> Void
+    var onSearch: () -> Void
 
     var body: some View {
         HStack {
             FlxLogo(size: 36)
             Spacer()
-            Button(action: onFilter) {
-                Image(systemName: "slider.horizontal.3")
+            Button(action: onSearch) {
+                Image(systemName: "magnifyingglass")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 52, height: 52)
             }
             .glassEffect(in: Circle())
+            .accessibilityLabel("Search")
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 10)
@@ -196,6 +197,7 @@ struct ActionButton: View {
             .shadow(color: glowColor, radius: 13)
         }
         .buttonStyle(ScaleButtonStyle(scale: 0.94))
+        .accessibilityLabel(kind == .skip ? "Skip" : "Like")
     }
 }
 
@@ -222,59 +224,10 @@ struct FilterChip: View {
                     )
                 )
         }
+        .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
 
-// MARK: - Custom tab bar (Discover+Watchlist pill · Profile circle)
+// MARK: - Tab identifiers
 
 enum DiscoverTab: Equatable { case discover, watchlist, profile }
-
-struct DiscoveryTabBar: View {
-    var active: DiscoverTab
-    var onChange: (DiscoverTab) -> Void
-
-    var body: some View {
-        HStack {
-            // Discover + Watchlist pill
-            HStack(spacing: 0) {
-                tabItem("movieclapper", "Discover", .discover)
-                tabItem("bookmark",        "Watchlist", .watchlist)
-            }
-            .glassEffect(in: Capsule())
-
-            Spacer()
-
-            // Profile circle — pushed to far right
-            Button(action: { onChange(.profile) }) {
-                Image(systemName: active == .profile ? "person.fill" : "person")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Color.dFg2)
-                    .frame(width: 52, height: 52)
-            }
-            .glassEffect(in: Circle())
-        }
-        .padding(.horizontal, 20)
-    }
-
-    @ViewBuilder
-    private func tabItem(_ icon: String, _ label: String, _ tab: DiscoverTab) -> some View {
-        let isActive = active == tab
-        let filledIcon: String = switch tab {
-            case .watchlist: "bookmark.fill"
-            case .discover:  "movieclapper"
-            case .profile:   icon
-        }
-        Button(action: { onChange(tab) }) {
-            VStack(spacing: 3) {
-                Image(systemName: isActive ? filledIcon : icon)
-                    .font(.system(size: 20, weight: isActive ? .semibold : .regular))
-                    .foregroundColor(isActive ? .flxRed : Color.dFg2)
-                Text(label)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(isActive ? .flxRed : Color.dFg2)
-            }
-            .frame(height: 52)
-            .padding(.horizontal, 24)
-        }
-    }
-}
