@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseCore
 import GoogleSignIn
+import GoogleMobileAds
 
 class AppDelegate: NSObject, UIApplicationDelegate {}
 
@@ -12,6 +13,7 @@ struct flixrApp: App {
 
     init() {
         FirebaseApp.configure()
+        MobileAds.shared.start()
         _authManager = State(initialValue: AuthManager())
         _library = State(initialValue: UserLibrary())
     }

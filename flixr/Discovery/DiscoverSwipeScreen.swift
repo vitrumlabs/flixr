@@ -1,4 +1,19 @@
 import SwiftUI
+import GoogleMobileAds
+
+// MARK: - Deck item
+
+private enum DeckItem: Identifiable {
+    case movie(Movie)
+    case ad(id: String)
+
+    var id: String {
+        switch self {
+        case .movie(let m): return m.id
+        case .ad(let id): return id
+        }
+    }
+}
 
 // MARK: - Screen 18: Discover · Swipe
 
@@ -12,13 +27,26 @@ struct DiscoverSwipeScreen: View {
     @Environment(UserLibrary.self) private var library
 
     @State private var movies: [Movie] = []
-    @State private var cardIndex = 0
+    @State private var deckIndex = 0
     @State private var isLoading = true
     @State private var fetchError = false
     @State private var cardFlyDirection: CGFloat? = nil
     @State private var shuffleTrigger = 0
+    @State private var adLoader = NativeAdLoader()
 
-    private var currentDeck: [Movie] { Array(movies.dropFirst(cardIndex)) }
+    // Interleaves an ad slot after every 8th movie
+    private var deck: [DeckItem] {
+        var result: [DeckItem] = []
+        for (i, movie) in movies.enumerated() {
+            result.append(.movie(movie))
+            if (i + 1) % 8 == 0 {
+                result.append(.ad(id: "ad-slot-\(i)"))
+            }
+        }
+        return result
+    }
+
+    private var currentDeck: [DeckItem] { Array(deck.dropFirst(deckIndex)) }
 
     var body: some View {
         ZStack {
@@ -46,16 +74,21 @@ struct DiscoverSwipeScreen: View {
                         } else {
                             CardStackView(
                                 deck: currentDeck,
+                                adLoader: adLoader,
                                 width: geo.size.width - 28,
                                 availableHeight: geo.size.height,
                                 flyDirection: $cardFlyDirection,
-                                onLike: { movie in
+                                onLike: { item in
                                     advance()
-                                    Task { await library.like(movie) }
+                                    if case .movie(let movie) = item {
+                                        Task { await library.like(movie) }
+                                    }
                                 },
-                                onSkip: { movie in
+                                onSkip: { item in
                                     advance()
-                                    Task { await library.skip(movie) }
+                                    if case .movie(let movie) = item {
+                                        Task { await library.skip(movie) }
+                                    }
                                 },
                                 onTap: { onOpenDetail($0) }
                             )
@@ -111,17 +144,33 @@ struct DiscoverSwipeScreen: View {
         }
     }
 
+    // MARK: - Deck management
+
     private func advance() {
-        withAnimation(.easeOut(duration: 0.2)) { cardIndex += 1 }
-        if movies.count - cardIndex < 5 {
-            Task { await loadMore() }
+        let wasAd: Bool
+        if let front = currentDeck.first, case .ad = front { wasAd = true } else { wasAd = false }
+
+        // Include any unloaded ad skip in the same animation block to prevent a
+        // visible jump between the outgoing card and the next movie.
+        withAnimation(.easeOut(duration: 0.2)) {
+            deckIndex += 1
+            while let front = Array(deck.dropFirst(deckIndex)).first,
+                  case .ad = front, adLoader.ad == nil {
+                deckIndex += 1
+            }
         }
+
+        if wasAd { adLoader.loadNext() }
+
+        let moviesLeft = currentDeck.filter { if case .movie = $0 { return true }; return false }.count
+        if moviesLeft < 5 { Task { await loadMore() } }
     }
 
     private func loadMovies() async {
         isLoading = true
         fetchError = false
-        cardIndex = 0
+        deckIndex = 0
+        adLoader.loadNext()
         do {
             movies = filters.isActive
                 ? try await MovieService.shared.discover(filters: filters, page: 1)
@@ -197,12 +246,13 @@ struct DiscoverSwipeScreen: View {
 // MARK: - Card stack
 
 private struct CardStackView: View {
-    var deck: [Movie]
+    var deck: [DeckItem]
+    var adLoader: NativeAdLoader
     var width: CGFloat
     var availableHeight: CGFloat
     @Binding var flyDirection: CGFloat?
-    var onLike: (Movie) -> Void
-    var onSkip: (Movie) -> Void
+    var onLike: (DeckItem) -> Void
+    var onSkip: (DeckItem) -> Void
     var onTap: (Movie) -> Void
 
     @State private var dragProgress: CGFloat = 0
@@ -211,7 +261,7 @@ private struct CardStackView: View {
 
     var body: some View {
         ZStack {
-            ForEach(Array(deck.prefix(3).enumerated().reversed()), id: \.element.id) { depth, movie in
+            ForEach(Array(deck.prefix(3).enumerated().reversed()), id: \.element.id) { depth, item in
                 let isFront = depth == 0
                 let p = Double(min(1, abs(dragProgress)))
                 let baseScale = 1.0 - Double(depth) * 0.04
@@ -221,25 +271,116 @@ private struct CardStackView: View {
                 let nextTy = depth > 0 ? Double(depth - 1) * 10.0 : 0.0
                 let ty = isFront ? 0.0 : baseTy + (nextTy - baseTy) * p
 
-                MovieCardView(
-                    movie: movie,
-                    isFront: isFront,
-                    width: width,
-                    availableHeight: availableHeight,
-                    dragProgress: isFront ? $dragProgress : .constant(0),
-                    flyDirection: isFront ? $flyDirection : .constant(nil),
-                    onLike: { onLike(movie) },
-                    onSkip: { onSkip(movie) },
-                    onTap: { onTap(movie) }
-                )
-                .scaleEffect(scale)
-                .offset(y: ty)
-                .zIndex(Double(3 - depth))
+                cardView(for: item, isFront: isFront)
+                    .scaleEffect(scale)
+                    .offset(y: ty)
+                    .zIndex(Double(3 - depth))
             }
         }
         // Fixed frame prevents the ZStack from expanding its hit-testing area
         // beyond the visible card bounds.
         .frame(width: width, height: cardHeight)
+    }
+
+    @ViewBuilder
+    private func cardView(for item: DeckItem, isFront: Bool) -> some View {
+        switch item {
+        case .movie(let movie):
+            MovieCardView(
+                movie: movie,
+                isFront: isFront,
+                width: width,
+                availableHeight: availableHeight,
+                dragProgress: isFront ? $dragProgress : .constant(0),
+                flyDirection: isFront ? $flyDirection : .constant(nil),
+                onLike: { onLike(item) },
+                onSkip: { onSkip(item) },
+                onTap: { onTap(movie) }
+            )
+        case .ad:
+            if isFront, let nativeAd = adLoader.ad {
+                AdCardView(
+                    nativeAd: nativeAd,
+                    width: width,
+                    availableHeight: availableHeight,
+                    dragProgress: $dragProgress,
+                    flyDirection: $flyDirection,
+                    onDismiss: { onSkip(item) }
+                )
+            } else {
+                // Placeholder shown in positions 2 & 3 of the stack, or while ad loads
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color.white.opacity(0.04))
+                    .frame(width: width, height: cardHeight)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+}
+
+// MARK: - Ad card (same swipe mechanics as MovieCardView, no LIKE/SKIP stamps)
+
+private struct AdCardView: View {
+    let nativeAd: NativeAd
+    let width: CGFloat
+    let availableHeight: CGFloat
+    @Binding var dragProgress: CGFloat
+    @Binding var flyDirection: CGFloat?
+    var onDismiss: () -> Void
+
+    @State private var dragX: CGFloat = 0
+    @State private var dragY: CGFloat = 0
+
+    private var height: CGFloat { min(width / 0.66, availableHeight) }
+    private var rotation: Double { Double(dragX) * 0.05 }
+
+    var body: some View {
+        NativeAdCardView(nativeAd: nativeAd, width: width, height: height)
+            .frame(width: width, height: height)
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.7), radius: 24, y: 12)
+            .rotationEffect(.degrees(rotation))
+            .offset(x: dragX, y: dragY * 0.4)
+            .gesture(
+                DragGesture()
+                    .onChanged { v in
+                        dragX = v.translation.width
+                        dragY = v.translation.height
+                        dragProgress = dragX / 150
+                    }
+                    .onEnded { v in
+                        let overThreshold = abs(v.translation.width) > 90
+                            || abs(v.predictedEndTranslation.width) > 200
+                        if overThreshold {
+                            flyOff(toward: v.translation.width > 0 ? 700 : -700)
+                        } else {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                dragX = 0; dragY = 0; dragProgress = 0
+                            }
+                        }
+                    }
+            )
+            .onChange(of: flyDirection) { _, direction in
+                guard let direction else { return }
+                flyOff(toward: direction > 0 ? 700 : -700, isExternalTrigger: true)
+            }
+            .transition(.identity)
+    }
+
+    private func flyOff(toward target: CGFloat, isExternalTrigger: Bool = false) {
+        withAnimation(.easeOut(duration: 0.28)) {
+            dragX = target
+            dragProgress = target > 0 ? 1 : -1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            if isExternalTrigger { flyDirection = nil }
+            onDismiss()
+        }
     }
 }
 

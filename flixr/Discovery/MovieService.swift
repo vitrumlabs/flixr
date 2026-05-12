@@ -50,6 +50,15 @@ struct MovieService {
         return movie
     }
 
+    func fetchWatchProviders(id: Int) async throws -> [String] {
+        let result = try await functions.httpsCallable("getWatchProviders").call(["movieId": id])
+        let data = result.data as? [String: Any] ?? [:]
+        let results = data["results"] as? [String: Any] ?? [:]
+        let us = results["US"] as? [String: Any] ?? [:]
+        let flatrate = us["flatrate"] as? [[String: Any]] ?? []
+        return flatrate.compactMap { $0["provider_name"] as? String }
+    }
+
     func search(query: String, page: Int = 1) async throws -> [Movie] {
         let result = try await functions.httpsCallable("searchMovies").call(["query": query, "page": page])
         let root = result.data as? [String: Any] ?? [:]
@@ -63,7 +72,7 @@ struct MovieService {
             "sortBy": filters.sortBy,
             "minRating": filters.minRating,
             "genres": Array(filters.genres),
-            "includeAdult": filters.includeAdult,
+            "includeAdult": false,
         ]
         if let decade = filters.decade {
             payload["decade"] = decade
@@ -111,6 +120,7 @@ extension Movie {
         self.synopsis     = d["overview"] as? String ?? ""
         self.posterPath   = d["poster_path"] as? String
         self.backdropPath = nil
+        self.trailerKey   = nil
     }
 }
 
@@ -164,6 +174,10 @@ extension Movie {
         self.synopsis     = d["overview"] as? String ?? ""
         self.posterPath   = d["poster_path"] as? String
         self.backdropPath = d["backdrop_path"] as? String
+        let videoResults  = (d["videos"] as? [String: Any])?["results"] as? [[String: Any]] ?? []
+        self.trailerKey   = videoResults.first(where: {
+            $0["type"] as? String == "Trailer" && $0["site"] as? String == "YouTube"
+        })?["key"] as? String
     }
 }
 
