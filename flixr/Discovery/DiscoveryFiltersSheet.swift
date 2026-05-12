@@ -10,7 +10,6 @@ struct DiscoveryFiltersSheet: View {
     @State private var selectedDecade: String?
     @State private var selectedSort: String
     @State private var minRating: Double
-    @State private var includeAdult: Bool
 
     private let genres     = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "History", "Horror", "Music", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
     private let decades    = ["2020s", "2010s", "2000s", "90s", "80s", "Older"]
@@ -23,12 +22,11 @@ struct DiscoveryFiltersSheet: View {
         _selectedDecade = State(initialValue: initialFilters.decade)
         _selectedSort   = State(initialValue: initialFilters.sortBy)
         _minRating      = State(initialValue: initialFilters.minRating / 10)
-        _includeAdult   = State(initialValue: initialFilters.includeAdult)
     }
 
     private var currentFilters: MovieFilters {
         MovieFilters(genres: selectedGenres, decade: selectedDecade, sortBy: selectedSort,
-                     minRating: minRating * 10, includeAdult: includeAdult)
+                     minRating: minRating * 10)
     }
 
     var body: some View {
@@ -61,7 +59,6 @@ struct DiscoveryFiltersSheet: View {
                             selectedDecade = nil
                             selectedSort = "Popular"
                             minRating = 0
-                            includeAdult = false
                         }
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.flxRed)
@@ -102,18 +99,6 @@ struct DiscoveryFiltersSheet: View {
 
                             FilterSection(title: "Min rating") {
                                 RatingSlider(value: $minRating)
-                            }
-
-                            FilterSection(title: "Content") {
-                                HStack {
-                                    Text("Include adult content")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color.dFg2)
-                                    Spacer()
-                                    Toggle("", isOn: $includeAdult)
-                                        .tint(.flxRed)
-                                        .labelsHidden()
-                                }
                             }
                         }
                         .padding(.horizontal, 20)

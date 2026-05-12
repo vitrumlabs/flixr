@@ -7,10 +7,9 @@ struct MovieFilters: Equatable {
     var decade: String? = nil
     var sortBy: String = "Popular"
     var minRating: Double = 0
-    var includeAdult: Bool = false
 
     var isActive: Bool {
-        !genres.isEmpty || decade != nil || sortBy != "Popular" || minRating > 0 || includeAdult
+        !genres.isEmpty || decade != nil || sortBy != "Popular" || minRating > 0
     }
 
     static let `default` = MovieFilters()
@@ -46,6 +45,7 @@ struct Movie: Identifiable, Equatable {
     let synopsis: String
     let posterPath: String?    // TMDB path, e.g. "/abc.jpg"
     let backdropPath: String?  // TMDB landscape backdrop path, only from detail endpoint
+    let trailerKey: String?    // YouTube video key, only from detail endpoint
 
     static func == (lhs: Movie, rhs: Movie) -> Bool { lhs.id == rhs.id }
 }

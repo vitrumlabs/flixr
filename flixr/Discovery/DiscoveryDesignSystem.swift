@@ -30,7 +30,8 @@ struct BackdropArt: View {
                     ProceduralBackdrop(palette: movie.palette, aspectRatio: aspectRatio)
                 }
             }
-            .aspectRatio(aspectRatio, contentMode: .fill)
+            .id(url)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
         } else {
             ProceduralBackdrop(palette: movie.palette, aspectRatio: aspectRatio)
@@ -67,7 +68,7 @@ private struct ProceduralBackdrop: View {
                     .frame(height: geo.size.height * 0.4).frame(maxHeight: .infinity, alignment: .bottom)
             }
         }
-        .aspectRatio(aspectRatio, contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

@@ -174,6 +174,17 @@ class AuthManager: NSObject {
         }
     }
 
+    // MARK: - Delete Account
+
+    func deleteAccount() async throws {
+        guard let currentUser = Auth.auth().currentUser else { return }
+        if let uid = currentUser.uid as String? {
+            try await Firestore.firestore().collection("users").document(uid).delete()
+        }
+        try await currentUser.delete()
+        GIDSignIn.sharedInstance.signOut()
+    }
+
     // MARK: - Firestore Profile
 
     private func createProfileIfNeeded(_ user: FirebaseAuth.User, isNewUser: Bool, name: String = "") async {

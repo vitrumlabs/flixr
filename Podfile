@@ -4,9 +4,11 @@ target 'flixr' do
   use_frameworks!
 
   pod 'FirebaseAuth'
+  pod 'FirebaseAnalytics'
   pod 'FirebaseFirestore'
   pod 'FirebaseFunctions'
   pod 'GoogleSignIn'
+  pod 'Google-Mobile-Ads-SDK'
 end
 
 post_install do |installer|

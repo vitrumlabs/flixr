@@ -144,6 +144,7 @@
 				46B640E02FACA4C100E34B1A /* Frameworks */,
 				46B640E12FACA4C100E34B1A /* Resources */,
 				8C25F26797B32F149CA5A1A1 /* [CP] Embed Pods Frameworks */,
+				B995EF050486FE5CF4C6C987 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -309,6 +310,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B995EF050486FE5CF4C6C987 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */

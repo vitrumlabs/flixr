@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAnalytics
 
 // MARK: - Screen 19: Search
 
@@ -73,6 +74,7 @@ struct DiscoverySearchView: View {
             isSearching = true
             results = (try? await MovieService.shared.search(query: query)) ?? []
             isSearching = false
+            if !results.isEmpty { Analytics.logSearch(query) }
         }
     }
 

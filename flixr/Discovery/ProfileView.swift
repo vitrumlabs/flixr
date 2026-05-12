@@ -10,6 +10,9 @@ struct ProfileView: View {
 
     @State private var skippedCount = 0
     @State private var isFlixrPlus  = false
+    @State private var showDeleteConfirmation = false
+    @State private var isDeletingAccount = false
+    @State private var deleteError: String? = nil
 
     private var user: FirebaseAuth.User? { auth.user }
 
@@ -29,9 +32,9 @@ struct ProfileView: View {
     }
 
     private var stats: [(String, String)] {[
-        ("Swiped",    (library.liked.count + skippedCount).formatted()),
-        ("Liked",     library.liked.count.formatted()),
-        ("Watchlist", library.watchlist.count.formatted()),
+        ("Swiped",   (library.liked.count + skippedCount).formatted()),
+        ("Liked",    library.liked.count.formatted()),
+        ("Skipped",  skippedCount.formatted()),
     ]}
 
     private let settingRows: [(label: String, sub: String, icon: String)] = [
@@ -56,7 +59,7 @@ struct ProfileView: View {
 
                     // Header
                     Text("Profile")
-                        .font(.flxDisplay(28))
+                        .font(.flxDisplay(32))
                         .foregroundColor(.white)
                         .padding(.horizontal, 20)
                         .padding(.top, 14)
@@ -72,12 +75,13 @@ struct ProfileView: View {
                                 .shadow(color: Color.flxRed.opacity(0.25), radius: 12)
 
                             if let photoURL = user?.photoURL {
-                                AsyncImage(url: photoURL) { image in
-                                    image.resizable().scaledToFill()
-                                } placeholder: {
-                                    Text(initials).font(.flxDisplay(28)).foregroundColor(.white)
+                                AsyncImage(url: photoURL) { phase in
+                                    if case .success(let image) = phase {
+                                        image.resizable().scaledToFill().clipShape(Circle())
+                                    } else {
+                                        Text(initials).font(.flxDisplay(28)).foregroundColor(.white)
+                                    }
                                 }
-                                .clipShape(Circle())
                             } else {
                                 Text(initials).font(.flxDisplay(28)).foregroundColor(.white)
                             }
@@ -89,17 +93,18 @@ struct ProfileView: View {
                                 .font(.flxDisplay(22))
                                 .foregroundColor(.white)
 
-                            Group {
-                                if let email = user?.email, !memberSince.isEmpty {
-                                    Text("\(email) · \(memberSince)")
-                                } else if let email = user?.email {
-                                    Text(email)
-                                } else if !memberSince.isEmpty {
-                                    Text(memberSince)
-                                }
+                            if let email = user?.email {
+                                Text(email)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color.dFg3)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
                             }
-                            .font(.system(size: 13))
-                            .foregroundColor(Color.dFg3)
+                            if !memberSince.isEmpty {
+                                Text(memberSince)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color.dFg3)
+                            }
 
                             if isFlixrPlus {
                                 HStack(spacing: 6) {
@@ -220,20 +225,68 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
 
-                    // Sign out
-                    Button(action: { auth.signOut() }) {
-                        Text("Sign out")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color.dFg3)
+                    // Sign out / Delete account
+                    VStack(spacing: 0) {
+                        Button(action: { auth.signOut() }) {
+                            Text("Sign out")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color.dFg3)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                        }
+                        .buttonStyle(.plain)
+
+                        Divider()
+                            .background(Color.dLine)
+
+                        Button(action: { showDeleteConfirmation = true }) {
+                            Text(isDeletingAccount ? "Deleting…" : "Delete Account")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isDeletingAccount)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
+                    .padding(.horizontal, 20)
                     .padding(.bottom, 110)
                 }
             }
         }
         .preferredColorScheme(.dark)
         .task { await fetchStats() }
+        .confirmationDialog(
+            "Delete Account",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Account and All Data", role: .destructive) {
+                isDeletingAccount = true
+                Task {
+                    do {
+                        try await auth.deleteAccount()
+                    } catch {
+                        deleteError = "Couldn't delete your account. Please sign out and sign back in, then try again."
+                    }
+                    isDeletingAccount = false
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete your account, watchlist, and all activity. This cannot be undone.")
+        }
+        .alert("Deletion Failed", isPresented: Binding(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteError ?? "")
+        }
     }
 
     private func fetchStats() async {
@@ -246,35 +299,64 @@ struct ProfileView: View {
     }
 }
 
-// MARK: - Genre chips (wrapping layout)
+// MARK: - Genre chips (wrapping flow layout)
 
 private struct GenreChips: View {
     var genres: [String]
 
     var body: some View {
-        // Wrapping rows built from measured items
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(rows, id: \.self) { row in
-                HStack(spacing: 8) {
-                    ForEach(row, id: \.self) { genre in
-                        Text(genre)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.flxRed.opacity(0.12))
-                            .clipShape(Capsule())
-                            .overlay(Capsule().strokeBorder(Color.flxRed.opacity(0.45), lineWidth: 1))
-                    }
-                }
+        ChipFlow(spacing: 8) {
+            ForEach(genres, id: \.self) { genre in
+                Text(genre)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.flxRed.opacity(0.12))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().strokeBorder(Color.flxRed.opacity(0.45), lineWidth: 1))
             }
         }
     }
+}
 
-    // Approximate wrapping: max 3 genres per row
-    private var rows: [[String]] {
-        stride(from: 0, to: genres.count, by: 3).map {
-            Array(genres[$0..<min($0 + 3, genres.count)])
+private struct ChipFlow: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var height: CGFloat = 0
+        var rowX: CGFloat = 0
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if rowX + size.width > maxWidth, rowX > 0 {
+                height += rowHeight + spacing
+                rowX = 0
+                rowHeight = 0
+            }
+            rowX += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: maxWidth, height: height + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX, x > bounds.minX {
+                y += rowHeight + spacing
+                x = bounds.minX
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
         }
     }
 }

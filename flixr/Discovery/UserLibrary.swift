@@ -1,5 +1,6 @@
 import Foundation
 import FirebaseAuth
+import FirebaseAnalytics
 import FirebaseFirestore
 
 // MARK: - Watchlist / liked snapshot stored in Firestore
@@ -34,7 +35,8 @@ struct MovieSnapshot {
             palette: MoviePalette.forGenre(genres.first ?? ""),
             synopsis: "",
             posterPath: posterPath,
-            backdropPath: nil
+            backdropPath: nil,
+            trailerKey: nil
         )
     }
 
@@ -111,6 +113,16 @@ final class UserLibrary {
             "liked": FieldValue.arrayUnion([entry])
         ])
         liked.append(snap)
+        Analytics.logMovieLiked(movie)
+    }
+
+    func unlike(_ movie: Movie) async {
+        guard let uid, let snap = liked.first(where: { $0.id == movie.id }) else { return }
+        let entry = snap.toFirestore()
+        try? await db.collection("users").document(uid).updateData([
+            "liked": FieldValue.arrayRemove([entry])
+        ])
+        liked.removeAll { $0.id == movie.id }
     }
 
     // MARK: - Skip
@@ -121,6 +133,7 @@ final class UserLibrary {
         try? await db.collection("users").document(uid).updateData([
             "skipped": FieldValue.arrayUnion([tmdbId])
         ])
+        Analytics.logMovieSkipped(movie)
     }
 
     // MARK: - Watchlist
@@ -133,6 +146,7 @@ final class UserLibrary {
             "watchlist": FieldValue.arrayUnion([entry])
         ])
         watchlist.append(snap)
+        Analytics.logWatchlistAdd(movie)
     }
 
     func removeFromWatchlist(_ movie: Movie) async {
@@ -142,6 +156,7 @@ final class UserLibrary {
             "watchlist": FieldValue.arrayRemove([entry])
         ])
         watchlist.removeAll { $0.id == movie.id }
+        Analytics.logWatchlistRemove(movie)
     }
 
     var watchlistIds: Set<String> { Set(watchlist.map(\.id)) }

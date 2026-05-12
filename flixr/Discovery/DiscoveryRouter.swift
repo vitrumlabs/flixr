@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAnalytics
 
 // MARK: - Per-tab navigation state
 
@@ -67,16 +68,26 @@ struct DiscoveryFlowView: View {
                     filters: activeFilters,
                     onOpenFilters: { withAnimation { showFilters = true } },
                     onOpenSearch: { withAnimation { discoverNav = .search } },
-                    onOpenDetail: { movie in withAnimation { discoverNav = .detail(movie) } },
-                    onShuffle: { randomizeFilters() }
+                    onOpenDetail: { movie in
+                        Analytics.logMovieDetailViewed(movie)
+                        withAnimation { discoverNav = .detail(movie) }
+                    },
+                    onShuffle: {
+                        Analytics.logShuffleTapped()
+                        randomizeFilters()
+                    }
                 )
             case .search:
                 DiscoverySearchView(
                     onClose: { withAnimation { discoverNav = .swipe } },
-                    onOpenDetail: { movie in withAnimation { discoverNav = .detail(movie) } }
+                    onOpenDetail: { movie in
+                        Analytics.logMovieDetailViewed(movie)
+                        withAnimation { discoverNav = .detail(movie) }
+                    }
                 )
             case .detail(let movie):
                 MovieDetailView(movie: movie, onClose: { withAnimation { discoverNav = .swipe } })
+                    .id(movie.id)
             }
 
             if showFilters {
@@ -84,6 +95,7 @@ struct DiscoveryFlowView: View {
                     initialFilters: activeFilters,
                     onApply: { newFilters in
                         activeFilters = newFilters
+                        Analytics.logFiltersApplied(newFilters)
                         withAnimation { showFilters = false }
                     },
                     onClose: { withAnimation { showFilters = false } }
@@ -103,9 +115,13 @@ struct DiscoveryFlowView: View {
         ZStack {
             switch watchlistNav {
             case .list:
-                WatchlistView(onOpenDetail: { movie in withAnimation { watchlistNav = .detail(movie) } })
+                WatchlistView(onOpenDetail: { movie in
+                    Analytics.logMovieDetailViewed(movie)
+                    withAnimation { watchlistNav = .detail(movie) }
+                })
             case .detail(let movie):
                 MovieDetailView(movie: movie, onClose: { withAnimation { watchlistNav = .list } })
+                    .id(movie.id)
             }
         }
         .animation(.easeInOut(duration: 0.22), value: watchlistNav)
