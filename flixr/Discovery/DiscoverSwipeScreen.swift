@@ -25,21 +25,16 @@ struct DiscoverSwipeScreen: View {
     var onShuffle: () -> Void
 
     @Environment(UserLibrary.self) private var library
+    @Environment(DiscoverDeck.self) private var deck
 
-    @State private var movies: [Movie] = []
-    @State private var deckIndex = 0
-    @State private var isLoading = true
-    @State private var fetchError = false
     @State private var cardFlyDirection: CGFloat? = nil
     @State private var shuffleTrigger = 0
     @State private var adLoader = NativeAdLoader()
-    @State private var totalSwipes = 0
-    @State private var isLoadingMore = false
 
     // Interleaves an ad slot after every 8th movie
-    private var deck: [DeckItem] {
+    private var deckItems: [DeckItem] {
         var result: [DeckItem] = []
-        for (i, movie) in movies.enumerated() {
+        for (i, movie) in deck.movies.enumerated() {
             result.append(.movie(movie))
             if (i + 1) % 8 == 0 {
                 result.append(.ad(id: "ad-slot-\(i)"))
@@ -48,7 +43,7 @@ struct DiscoverSwipeScreen: View {
         return result
     }
 
-    private var currentDeck: [DeckItem] { Array(deck.dropFirst(deckIndex)) }
+    private var currentItems: [DeckItem] { Array(deckItems.dropFirst(deck.deckIndex)) }
 
     var body: some View {
         ZStack {
@@ -67,15 +62,15 @@ struct DiscoverSwipeScreen: View {
 
                 GeometryReader { geo in
                     Group {
-                        if isLoading {
+                        if deck.isLoading {
                             loadingCard(width: geo.size.width - 28, maxHeight: geo.size.height)
-                        } else if fetchError || movies.isEmpty {
+                        } else if deck.fetchError || deck.movies.isEmpty {
                             errorCard(width: geo.size.width - 28, maxHeight: geo.size.height)
-                        } else if currentDeck.isEmpty {
+                        } else if currentItems.isEmpty {
                             doneCard(width: geo.size.width - 28, maxHeight: geo.size.height)
                         } else {
                             CardStackView(
-                                deck: currentDeck,
+                                deck: currentItems,
                                 adLoader: adLoader,
                                 width: geo.size.width - 28,
                                 availableHeight: geo.size.height,
@@ -83,7 +78,7 @@ struct DiscoverSwipeScreen: View {
                                 onLike: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        totalSwipes += 1
+                                        deck.totalSwipes += 1
                                         Task {
                                             await library.like(movie)
                                             await library.recordSwipe(movie, liked: true)
@@ -93,7 +88,7 @@ struct DiscoverSwipeScreen: View {
                                 onSkip: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        totalSwipes += 1
+                                        deck.totalSwipes += 1
                                         Task {
                                             await library.skip(movie)
                                             await library.recordSwipe(movie, liked: false)
@@ -110,10 +105,10 @@ struct DiscoverSwipeScreen: View {
                 GlassEffectContainer(spacing: 8) {
                     HStack(spacing: 16) {
                         ActionButton(kind: .skip, size: 84) {
-                            guard !currentDeck.isEmpty else { return }
+                            guard !currentItems.isEmpty else { return }
                             cardFlyDirection = -1
                         }
-                        .disabled(currentDeck.isEmpty || isLoading || cardFlyDirection != nil)
+                        .disabled(currentItems.isEmpty || deck.isLoading || cardFlyDirection != nil)
 
                         Button(action: onOpenFilters) {
                             Image(systemName: "slider.horizontal.3")
@@ -136,10 +131,10 @@ struct DiscoverSwipeScreen: View {
                         .sensoryFeedback(.impact(weight: .medium), trigger: shuffleTrigger)
 
                         ActionButton(kind: .like, size: 84) {
-                            guard !currentDeck.isEmpty else { return }
+                            guard !currentItems.isEmpty else { return }
                             cardFlyDirection = 1
                         }
-                        .disabled(currentDeck.isEmpty || isLoading || cardFlyDirection != nil)
+                        .disabled(currentItems.isEmpty || deck.isLoading || cardFlyDirection != nil)
                     }
                 }
                 .padding(.top, 20)
@@ -147,10 +142,18 @@ struct DiscoverSwipeScreen: View {
             }
         }
         .preferredColorScheme(.dark)
-        .task { await loadMovies() }
-        .onChange(of: filters) { _, _ in
+        .task {
+            // Only load if the deck is empty — preserves position when
+            // returning from MovieDetailView
+            if deck.movies.isEmpty {
+                adLoader.loadNext()
+                await deck.loadMovies(filters: filters)
+            }
+        }
+        .onChange(of: filters) { _, newFilters in
             cardFlyDirection = nil
-            Task { await loadMovies() }
+            adLoader.loadNext()
+            Task { await deck.loadMovies(filters: newFilters) }
         }
     }
 
@@ -158,84 +161,22 @@ struct DiscoverSwipeScreen: View {
 
     private func advance() {
         let wasAd: Bool
-        if let front = currentDeck.first, case .ad = front { wasAd = true } else { wasAd = false }
+        if let front = currentItems.first, case .ad = front { wasAd = true } else { wasAd = false }
 
         // Include any unloaded ad skip in the same animation block to prevent a
         // visible jump between the outgoing card and the next movie.
         withAnimation(.easeOut(duration: 0.2)) {
-            deckIndex += 1
-            while let front = Array(deck.dropFirst(deckIndex)).first,
+            deck.deckIndex += 1
+            while let front = Array(deckItems.dropFirst(deck.deckIndex)).first,
                   case .ad = front, adLoader.ad == nil {
-                deckIndex += 1
+                deck.deckIndex += 1
             }
         }
 
         if wasAd { adLoader.loadNext() }
 
-        let moviesLeft = currentDeck.filter { if case .movie = $0 { return true }; return false }.count
-        if moviesLeft < 5 { Task { await loadMore() } }
-    }
-
-    private func loadMovies() async {
-        isLoading = true
-        fetchError = false
-        deckIndex = 0
-        totalSwipes = 0
-        adLoader.loadNext()
-        do {
-            let page1 = filters.isActive
-                ? try await MovieService.shared.discover(filters: filters, page: 1)
-                : try await MovieService.shared.fetchPopular(page: 1)
-            // Show first 10 movies immediately
-            movies = Array(page1.prefix(10))
-            isLoading = false
-            // Preload 2 more TMDB pages silently so the deck never runs dry
-            // while waiting for AI recommendations to start returning
-            Task { await preloadTMDB(pages: 2...3) }
-        } catch {
-            fetchError = true
-            isLoading = false
-        }
-    }
-
-    private func preloadTMDB(pages: ClosedRange<Int>) async {
-        for page in pages {
-            let seenIds = movies.map(\.id)
-            if filters.isActive {
-                guard let more = try? await MovieService.shared.discover(filters: filters, page: page)
-                else { continue }
-                movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
-            } else {
-                guard let more = try? await MovieService.shared.fetchPopular(page: page)
-                else { continue }
-                movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
-            }
-        }
-    }
-
-    private func loadMore() async {
-        guard !isLoadingMore else { return }
-        isLoadingMore = true
-        defer { isLoadingMore = false }
-
-        let seenIds = movies.map(\.id)
-        var more: [Movie] = []
-
-        if totalSwipes >= 5 {
-            more = (try? await MovieService.shared.fetchRecommendations(seenIds: seenIds)) ?? []
-        }
-
-        // Fall back to TMDB pagination if AI returned nothing or hasn't kicked in yet
-        if more.isEmpty {
-            let nextPage = (movies.count / 20) + 1
-            if filters.isActive {
-                more = (try? await MovieService.shared.discover(filters: filters, page: nextPage)) ?? []
-            } else {
-                more = (try? await MovieService.shared.fetchPopular(page: nextPage)) ?? []
-            }
-        }
-
-        movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
+        let moviesLeft = currentItems.filter { if case .movie = $0 { return true }; return false }.count
+        if moviesLeft < 5 { Task { await deck.loadMore(filters: filters) } }
     }
 
     // MARK: - State cards
@@ -260,7 +201,7 @@ struct DiscoverSwipeScreen: View {
             Text("Couldn't load films")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
-            Button("Try again") { Task { await loadMovies() } }
+            Button("Try again") { adLoader.loadNext(); Task { await deck.loadMovies(filters: filters) } }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.flxRed)
                 .frame(minWidth: 44, minHeight: 44)
@@ -278,7 +219,7 @@ struct DiscoverSwipeScreen: View {
             Text("You've seen everything!")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
-            Button("Load more") { Task { await loadMore() } }
+            Button("Load more") { Task { await deck.loadMore(filters: filters) } }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.flxRed)
                 .frame(minWidth: 44, minHeight: 44)

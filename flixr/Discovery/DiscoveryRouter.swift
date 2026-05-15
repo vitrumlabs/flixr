@@ -18,6 +18,7 @@ private enum WatchlistNav: Equatable {
 struct DiscoveryFlowView: View {
     @State private var activeTab: DiscoverTab = .discover
     @State private var discoverNav: DiscoverNav = .swipe
+    @State private var discoverDeck = DiscoverDeck()
     @State private var watchlistNav: WatchlistNav = .list
     @State private var searchMovie: Movie? = nil
     @State private var showFilters = false
@@ -84,6 +85,7 @@ struct DiscoveryFlowView: View {
                         randomizeFilters()
                     }
                 )
+                .environment(discoverDeck)
             case .detail(let movie):
                 MovieDetailView(movie: movie, onClose: { withAnimation { discoverNav = .swipe } })
                     .id(movie.id)
