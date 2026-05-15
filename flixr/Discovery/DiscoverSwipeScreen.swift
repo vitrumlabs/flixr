@@ -34,6 +34,7 @@ struct DiscoverSwipeScreen: View {
     @State private var shuffleTrigger = 0
     @State private var adLoader = NativeAdLoader()
     @State private var totalSwipes = 0
+    @State private var isLoadingMore = false
 
     // Interleaves an ad slot after every 8th movie
     private var deck: [DeckItem] {
@@ -182,33 +183,59 @@ struct DiscoverSwipeScreen: View {
         totalSwipes = 0
         adLoader.loadNext()
         do {
-            movies = filters.isActive
+            let page1 = filters.isActive
                 ? try await MovieService.shared.discover(filters: filters, page: 1)
                 : try await MovieService.shared.fetchPopular(page: 1)
+            // Show first 10 movies immediately
+            movies = Array(page1.prefix(10))
+            isLoading = false
+            // Preload 2 more TMDB pages silently so the deck never runs dry
+            // while waiting for AI recommendations to start returning
+            Task { await preloadTMDB(pages: 2...3) }
         } catch {
             fetchError = true
+            isLoading = false
         }
-        isLoading = false
     }
 
-    private func loadMore() async {
-        let seenIds = movies.map(\.id)
-        if totalSwipes >= 5 {
-            guard let more = try? await MovieService.shared.fetchRecommendations(seenIds: seenIds)
-            else { return }
-            movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
-        } else {
-            let nextPage = (movies.count / 20) + 1
+    private func preloadTMDB(pages: ClosedRange<Int>) async {
+        for page in pages {
+            let seenIds = movies.map(\.id)
             if filters.isActive {
-                guard let more = try? await MovieService.shared.discover(filters: filters, page: nextPage)
-                else { return }
+                guard let more = try? await MovieService.shared.discover(filters: filters, page: page)
+                else { continue }
                 movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
             } else {
-                guard let more = try? await MovieService.shared.fetchPopular(page: nextPage)
-                else { return }
+                guard let more = try? await MovieService.shared.fetchPopular(page: page)
+                else { continue }
                 movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
             }
         }
+    }
+
+    private func loadMore() async {
+        guard !isLoadingMore else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+
+        let seenIds = movies.map(\.id)
+        var more: [Movie] = []
+
+        if totalSwipes >= 5 {
+            more = (try? await MovieService.shared.fetchRecommendations(seenIds: seenIds)) ?? []
+        }
+
+        // Fall back to TMDB pagination if AI returned nothing or hasn't kicked in yet
+        if more.isEmpty {
+            let nextPage = (movies.count / 20) + 1
+            if filters.isActive {
+                more = (try? await MovieService.shared.discover(filters: filters, page: nextPage)) ?? []
+            } else {
+                more = (try? await MovieService.shared.fetchPopular(page: nextPage)) ?? []
+            }
+        }
+
+        movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
     }
 
     // MARK: - State cards
