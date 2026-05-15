@@ -82,11 +82,22 @@ struct MovieService {
         return results.compactMap { Movie(tmdb: $0) }
     }
 
-    func fetchRecommendations(seenIds: [String], count: Int = 10) async throws -> [Movie] {
-        let result = try await functions.httpsCallable("getRecommendations").call([
-            "seenIds": seenIds,
-            "count": count,
-        ])
+    func fetchRecommendations(
+        seenIds: [String],
+        filters: MovieFilters = .default,
+        count: Int = 10
+    ) async throws -> [Movie] {
+        var payload: [String: Any] = ["seenIds": seenIds, "count": count]
+        if filters.isActive {
+            var f: [String: Any] = [
+                "genres": Array(filters.genres),
+                "minRating": filters.minRating,
+                "sortBy": filters.sortBy,
+            ]
+            if let decade = filters.decade { f["decade"] = decade }
+            payload["filters"] = f
+        }
+        let result = try await functions.httpsCallable("getRecommendations").call(payload)
         let data = result.data as? [[String: Any]] ?? []
         return data.compactMap { Movie(tmdb: $0) }
     }
