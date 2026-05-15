@@ -27,6 +27,18 @@ enum TMDBImage {
     static func profileURL(_ path: String) -> URL? {
         URL(string: "\(base)w185\(path)")
     }
+
+    static func logoURL(_ path: String) -> URL? {
+        URL(string: "\(base)w92\(path)")
+    }
+}
+
+// MARK: - Watch provider
+
+struct WatchProvider: Identifiable, Hashable {
+    let id: Int
+    let name: String
+    let logoPath: String?
 }
 
 // MARK: - Service
@@ -50,13 +62,17 @@ struct MovieService {
         return movie
     }
 
-    func fetchWatchProviders(id: Int) async throws -> [String] {
+    func fetchWatchProviders(id: Int) async throws -> [WatchProvider] {
         let result = try await functions.httpsCallable("getWatchProviders").call(["movieId": id])
         let data = result.data as? [String: Any] ?? [:]
         let results = data["results"] as? [String: Any] ?? [:]
         let us = results["US"] as? [String: Any] ?? [:]
         let flatrate = us["flatrate"] as? [[String: Any]] ?? []
-        return flatrate.compactMap { $0["provider_name"] as? String }
+        return flatrate.compactMap { dict -> WatchProvider? in
+            guard let name = dict["provider_name"] as? String,
+                  let providerId = dict["provider_id"] as? Int else { return nil }
+            return WatchProvider(id: providerId, name: name, logoPath: dict["logo_path"] as? String)
+        }
     }
 
     func search(query: String, page: Int = 1) async throws -> [Movie] {

@@ -10,10 +10,10 @@ struct MovieDetailView: View {
     @Environment(\.openURL) private var openURL
     @State private var detail: Movie? = nil
     @State private var isFetching = false
-    @State private var watchProviders: [String] = []
+    @State private var watchProviders: [WatchProvider] = []
 
     private var displayed: Movie { detail ?? movie }
-    private let heroHeight: CGFloat = 300
+    private let heroHeight: CGFloat = 460
 
     private var topSafeArea: CGFloat {
         UIApplication.shared.connectedScenes
@@ -31,8 +31,28 @@ struct MovieDetailView: View {
                     heroSection
                     contentSection
                 }
+                .containerRelativeFrame(.horizontal)
             }
             .ignoresSafeArea(edges: .top)
+
+            // Back button floats above scroll content, anchored to physical top
+            VStack {
+                HStack {
+                    Button(action: onClose) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 52, height: 52)
+                    }
+                    .glassEffect(.clear.interactive(), in: .circle)
+                    .accessibilityLabel("Back")
+                    .padding(.top, topSafeArea + 8)
+                    .padding(.leading, 16)
+                    Spacer()
+                }
+                Spacer()
+            }
+            .ignoresSafeArea()
         }
         .preferredColorScheme(.dark)
         .task(id: movie.id) {
@@ -57,11 +77,10 @@ struct MovieDetailView: View {
 
             LinearGradient(
                 stops: [
-                    .init(color: .black.opacity(0.25), location: 0),
-                    .init(color: .clear, location: 0.18),
-                    .init(color: .clear, location: 0.4),
-                    .init(color: .black.opacity(0.45), location: 0.65),
-                    .init(color: .black.opacity(0.88), location: 0.88),
+                    .init(color: .clear, location: 0),
+                    .init(color: .clear, location: 0.44),
+                    .init(color: .black.opacity(0.52), location: 0.66),
+                    .init(color: .black.opacity(0.92), location: 0.84),
                     .init(color: .black, location: 1),
                 ],
                 startPoint: .top, endPoint: .bottom
@@ -70,28 +89,16 @@ struct MovieDetailView: View {
             Button(action: openTrailer) {
                 Image(systemName: "play.fill")
                     .font(.system(size: 22))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .frame(width: 56, height: 56)
             }
-            .glassEffect(in: Circle())
+            .glassEffect(.clear.interactive(), in: .circle)
             .accessibilityLabel("Play trailer")
             .frame(maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity)
         .frame(height: heroHeight)
         .clipped()
-        .overlay(alignment: .topLeading) {
-            Button(action: onClose) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-            }
-            .glassEffect(in: Circle())
-            .accessibilityLabel("Close")
-            .padding(.top, topSafeArea + 8)
-            .padding(.leading, 16)
-        }
     }
 
     // MARK: - Content
@@ -99,20 +106,20 @@ struct MovieDetailView: View {
     private var contentSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(displayed.title)
-                .font(.flxDisplay(32))
-                .tracking(-0.5)
+                .font(.flxDisplay(36))
+                .tracking(-0.8)
                 .foregroundColor(.white)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 20)
+                .padding(.top, 16)
 
             metaRow.padding(.top, 8)
 
             Text(displayed.synopsis)
                 .font(.system(size: 15))
-                .foregroundColor(Color.dFg2)
-                .lineSpacing(3)
+                .foregroundStyle(Color.dFg2)
+                .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 14)
+                .padding(.top, 16)
 
             actionButtons.padding(.top, 20)
 
@@ -135,34 +142,35 @@ struct MovieDetailView: View {
 
     private var metaRow: some View {
         let timeParts = [String(displayed.year), displayed.runtime].filter { !$0.isEmpty && $0 != "0" }
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 0) {
-                HStack(spacing: 4) {
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                HStack(spacing: 5) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "FFD700"))
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color(hex: "FFD700"))
                     Text(String(format: "%.1f", displayed.rating))
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(Color(hex: "FFD700"))
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(Color(hex: "FFD700"))
                 }
                 ForEach(timeParts, id: \.self) { part in
                     DotSep()
-                    Text(part).foregroundColor(Color.dFg2)
+                    Text(part)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.dFg2)
                 }
             }
-            .font(.system(size: 13))
 
             if !displayed.genres.isEmpty {
                 HStack(spacing: 6) {
                     ForEach(displayed.genres, id: \.self) { genre in
                         Text(genre)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(Color.dFg2)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.white.opacity(0.08))
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(displayed.palette.accent.opacity(0.25))
                             .clipShape(Capsule())
-                            .overlay(Capsule().strokeBorder(Color.dLine, lineWidth: 1))
+                            .overlay(Capsule().strokeBorder(displayed.palette.accent.opacity(0.5), lineWidth: 1))
                     }
                 }
             }
@@ -170,60 +178,61 @@ struct MovieDetailView: View {
     }
 
     private var actionButtons: some View {
-        let inWatchlist = library.watchlistIds.contains(displayed.id)
-        return HStack(spacing: 10) {
-            Button(action: openTrailer) {
-                HStack(spacing: 8) {
-                    Image(systemName: "play.fill").font(.system(size: 14))
-                    Text("Watch trailer").font(.system(size: 15, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background(LinearGradient(
-                    colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
-                    startPoint: .top, endPoint: .bottom))
-                .clipShape(Capsule())
+        Button(action: openTrailer) {
+            HStack(spacing: 8) {
+                Image(systemName: "play.fill").font(.system(size: 14))
+                Text("Watch trailer").font(.system(size: 15, weight: .semibold))
             }
-            .buttonStyle(ScaleButtonStyle(scale: 0.97))
-
-            Button(action: {
-                Task {
-                    if inWatchlist { await library.removeFromWatchlist(displayed) }
-                    else           { await library.addToWatchlist(displayed) }
-                }
-            }) {
-                Image(systemName: inWatchlist ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 18))
-                    .foregroundColor(inWatchlist ? .flxRed : .white)
-                    .frame(width: 52, height: 48)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(Capsule())
-                    .overlay(Capsule().strokeBorder(Color.dLine, lineWidth: 1))
-            }
-            .accessibilityLabel(inWatchlist ? "Remove from watchlist" : "Add to watchlist")
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 15)
+            .background(LinearGradient(
+                colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
+                startPoint: .top, endPoint: .bottom))
+            .clipShape(Capsule())
         }
+        .buttonStyle(ScaleButtonStyle(scale: 0.97))
     }
 
     private var metadataSection: some View {
-        VStack(spacing: 0) {
-            MetaListRow(label: "Director",  value: displayed.director,    isLoading: isFetching)
-            Rectangle().fill(Color.dLine).frame(height: 1).padding(.leading, 14)
-            MetaListRow(label: "Studio",    value: displayed.studio,      isLoading: isFetching)
-            Rectangle().fill(Color.dLine).frame(height: 1).padding(.leading, 14)
-            MetaListRow(label: "Language",  value: displayed.language,    isLoading: false)
-            Rectangle().fill(Color.dLine).frame(height: 1).padding(.leading, 14)
-            MetaListRow(label: "Release",   value: displayed.releaseDate, isLoading: false)
-            Rectangle().fill(Color.dLine).frame(height: 1).padding(.leading, 14)
-            MetaListRow(label: "Rated",     value: displayed.cert,        isLoading: false)
+        let items: [(String, String, Bool)] = [
+            ("Director", displayed.director,    isFetching),
+            ("Studio",   displayed.studio,      isFetching),
+            ("Release",  displayed.releaseDate, false),
+            ("Language", displayed.language,    false),
+            ("Rated",    displayed.cert,        false),
+        ]
+        return GlassEffectContainer(spacing: 8) {
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible())],
+                spacing: 10
+            ) {
+                ForEach(items, id: \.0) { label, value, loading in
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(label)
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(1.0)
+                            .textCase(.uppercase)
+                            .foregroundStyle(Color.dFg3)
+                        if loading {
+                            Capsule().fill(Color.white.opacity(0.1)).frame(height: 13)
+                        } else {
+                            Text(value.isEmpty ? "—" : value)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+            }
         }
-        .background(Color.white.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.dLine, lineWidth: 1))
     }
 
     private var castSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             sectionLabel("Cast")
             if isFetching {
                 ProgressView().tint(.white)
@@ -242,19 +251,38 @@ struct MovieDetailView: View {
     }
 
     private var whereToWatchSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             sectionLabel("Where to Watch")
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(watchProviders, id: \.self) { provider in
-                        Text(provider)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 9)
-                            .background(Color.white.opacity(0.07))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.dLine, lineWidth: 1))
+                HStack(spacing: 10) {
+                    ForEach(watchProviders) { provider in
+                        VStack(spacing: 8) {
+                            Group {
+                                if let path = provider.logoPath, let url = TMDBImage.logoURL(path) {
+                                    AsyncImage(url: url) { phase in
+                                        if case .success(let image) = phase {
+                                            image.resizable().scaledToFit()
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(Color.white.opacity(0.1))
+                                        }
+                                    }
+                                    .id(url)
+                                } else {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color.white.opacity(0.1))
+                                }
+                            }
+                            .frame(width: 52, height: 52)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                            Text(provider.name)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Color.dFg2)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(width: 64)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -268,7 +296,7 @@ struct MovieDetailView: View {
             .font(.system(size: 12, weight: .bold))
             .tracking(1.2)
             .textCase(.uppercase)
-            .foregroundColor(Color.dFg3)
+            .foregroundStyle(.white.opacity(0.45))
     }
 
     private func openTrailer() {
