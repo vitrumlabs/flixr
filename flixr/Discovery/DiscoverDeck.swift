@@ -6,7 +6,7 @@ import Foundation
 final class DiscoverDeck {
     var movies: [Movie] = []
     var deckIndex: Int = 0
-    var isLoading: Bool = false
+    var isLoading: Bool = true
     var fetchError: Bool = false
     var totalSwipes: Int = 0
     private var isLoadingMore: Bool = false

@@ -11,6 +11,7 @@ enum EmailSignUpResult  { case success, emailExists, networkError }
 @Observable
 class AuthManager: NSObject {
     var user: FirebaseAuth.User? = nil
+    var isReady = false
     var isLoading = false
     var isSigningOut = false
     var authError: String? = nil
@@ -25,6 +26,7 @@ class AuthManager: NSObject {
         user = Auth.auth().currentUser?.isEmailVerified == true ? Auth.auth().currentUser : nil
         authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, u in
             self?.user = u?.isEmailVerified == true ? u : nil
+            self?.isReady = true
         }
     }
 
