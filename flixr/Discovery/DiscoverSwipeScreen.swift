@@ -33,6 +33,7 @@ struct DiscoverSwipeScreen: View {
     @State private var cardFlyDirection: CGFloat? = nil
     @State private var shuffleTrigger = 0
     @State private var adLoader = NativeAdLoader()
+    @State private var totalSwipes = 0
 
     // Interleaves an ad slot after every 8th movie
     private var deck: [DeckItem] {
@@ -81,13 +82,21 @@ struct DiscoverSwipeScreen: View {
                                 onLike: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        Task { await library.like(movie) }
+                                        totalSwipes += 1
+                                        Task {
+                                            await library.like(movie)
+                                            await library.recordSwipe(movie, liked: true)
+                                        }
                                     }
                                 },
                                 onSkip: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        Task { await library.skip(movie) }
+                                        totalSwipes += 1
+                                        Task {
+                                            await library.skip(movie)
+                                            await library.recordSwipe(movie, liked: false)
+                                        }
                                     }
                                 },
                                 onTap: { onOpenDetail($0) }
@@ -170,6 +179,7 @@ struct DiscoverSwipeScreen: View {
         isLoading = true
         fetchError = false
         deckIndex = 0
+        totalSwipes = 0
         adLoader.loadNext()
         do {
             movies = filters.isActive
@@ -182,13 +192,22 @@ struct DiscoverSwipeScreen: View {
     }
 
     private func loadMore() async {
-        let nextPage = (movies.count / 20) + 1
-        if filters.isActive {
-            guard let more = try? await MovieService.shared.discover(filters: filters, page: nextPage) else { return }
-            movies.append(contentsOf: more.filter { !movies.map(\.id).contains($0.id) })
+        let seenIds = movies.map(\.id)
+        if totalSwipes >= 5 {
+            guard let more = try? await MovieService.shared.fetchRecommendations(seenIds: seenIds)
+            else { return }
+            movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
         } else {
-            guard let more = try? await MovieService.shared.fetchPopular(page: nextPage) else { return }
-            movies.append(contentsOf: more.filter { !movies.map(\.id).contains($0.id) })
+            let nextPage = (movies.count / 20) + 1
+            if filters.isActive {
+                guard let more = try? await MovieService.shared.discover(filters: filters, page: nextPage)
+                else { return }
+                movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
+            } else {
+                guard let more = try? await MovieService.shared.fetchPopular(page: nextPage)
+                else { return }
+                movies.append(contentsOf: more.filter { m in !seenIds.contains(m.id) })
+            }
         }
     }
 
