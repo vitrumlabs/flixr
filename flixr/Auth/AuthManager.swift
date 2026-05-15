@@ -1,7 +1,6 @@
 import Foundation
 import FirebaseCore
 import FirebaseAuth
-import FirebaseFirestore
 import GoogleSignIn
 import AuthenticationServices
 import CryptoKit
@@ -26,6 +25,12 @@ class AuthManager: NSObject {
         user = Auth.auth().currentUser?.isEmailVerified == true ? Auth.auth().currentUser : nil
         authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, u in
             self?.user = u?.isEmailVerified == true ? u : nil
+        }
+    }
+
+    deinit {
+        if let handle = authStateHandle {
+            Auth.auth().removeStateDidChangeListener(handle)
         }
     }
 
@@ -65,8 +70,7 @@ class AuthManager: NSObject {
                 rawNonce: nonce,
                 fullName: appleCredential.fullName
             )
-            let authResult = try await Auth.auth().signIn(with: credential)
-            await createProfileIfNeeded(authResult.user, isNewUser: authResult.additionalUserInfo?.isNewUser == true)
+            try await Auth.auth().signIn(with: credential)
         } catch {
             authError = error.localizedDescription
         }
@@ -99,8 +103,7 @@ class AuthManager: NSObject {
                 withIDToken: idToken,
                 accessToken: result.user.accessToken.tokenString
             )
-            let authResult = try await Auth.auth().signIn(with: credential)
-            await createProfileIfNeeded(authResult.user, isNewUser: authResult.additionalUserInfo?.isNewUser == true)
+            try await Auth.auth().signIn(with: credential)
         } catch {
             authError = error.localizedDescription
         }
@@ -136,7 +139,6 @@ class AuthManager: NSObject {
             req.displayName = name
             try? await req.commitChanges()
             try? await result.user.sendEmailVerification()
-            await createProfileIfNeeded(result.user, isNewUser: true, name: name)
             return .success
         } catch let error as NSError {
             return error.code == AuthErrorCode.emailAlreadyInUse.rawValue ? .emailExists : .networkError
@@ -178,31 +180,10 @@ class AuthManager: NSObject {
 
     func deleteAccount() async throws {
         guard let currentUser = Auth.auth().currentUser else { return }
-        if let uid = currentUser.uid as String? {
-            try await Firestore.firestore().collection("users").document(uid).delete()
-        }
         try await currentUser.delete()
         GIDSignIn.sharedInstance.signOut()
     }
 
-    // MARK: - Firestore Profile
-
-    private func createProfileIfNeeded(_ user: FirebaseAuth.User, isNewUser: Bool, name: String = "") async {
-        guard isNewUser else { return }
-        let db = Firestore.firestore()
-        try? await db.collection("users").document(user.uid).setData([
-            "uid": user.uid,
-            "email": user.email ?? "",
-            "displayName": name.isEmpty ? (user.displayName ?? "") : name,
-            "photoURL": user.photoURL?.absoluteString ?? "",
-            "createdAt": FieldValue.serverTimestamp(),
-            "watchlist": [],
-            "liked": [],
-            "skipped": [],
-            "filters": ["genres": [], "decade": "", "minRating": 0],
-            "isFlixrPlus": false,
-        ])
-    }
 }
 
 // MARK: - Errors
