@@ -133,20 +133,19 @@ private struct ProceduralPoster: View {
 // MARK: - Top app bar (logo + search button)
 
 struct DiscoveryTopBar: View {
-    var onSearch: () -> Void
+    var onOpenProfile: () -> Void
 
     var body: some View {
         HStack {
             FlxLogo(size: 36)
             Spacer()
-            Button(action: onSearch) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white)
+            Button(action: onOpenProfile) {
+                Image(systemName: "person.fill")
+                    .foregroundStyle(.white)
                     .frame(width: 52, height: 52)
             }
-            .glassEffect(in: Circle())
-            .accessibilityLabel("Search")
+            .glassEffect(.regular.interactive(), in: .circle)
+            .accessibilityLabel("Profile")
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 10)
@@ -165,12 +164,6 @@ struct ActionButton: View {
     private var color: Color {
         kind == .skip ? .flxRed : Color(hex: "2BD17E")
     }
-    private var borderColor: Color {
-        kind == .skip ? Color.flxRed.opacity(0.65) : Color(hex: "2BD17E").opacity(0.65)
-    }
-    private var glowColor: Color {
-        kind == .skip ? Color.flxRed.opacity(0.35) : Color(hex: "2BD17E").opacity(0.35)
-    }
 
     var body: some View {
         Button(action: { action?() }) {
@@ -183,21 +176,10 @@ struct ActionButton: View {
                         .font(.system(size: size * 0.33))
                 }
             }
-            .foregroundColor(color)
+            .foregroundStyle(color)
             .frame(width: size, height: size)
-            .background(
-                RadialGradient(
-                    colors: [Color(hex: "1c1c1e").opacity(0.95), Color(hex: "0a0a0c").opacity(0.95)],
-                    center: UnitPoint(x: 0.5, y: 0.3),
-                    startRadius: 0, endRadius: size * 0.5
-                )
-            )
-            .clipShape(Circle())
-            .overlay(Circle().strokeBorder(borderColor, lineWidth: 1.5))
-            .shadow(color: .black.opacity(0.55), radius: 11, y: 4)
-            .shadow(color: glowColor, radius: 13)
         }
-        .buttonStyle(ScaleButtonStyle(scale: 0.94))
+        .glassEffect(.regular.interactive(), in: .circle)
         .accessibilityLabel(kind == .skip ? "Skip" : "Like")
     }
 }
@@ -231,4 +213,4 @@ struct FilterChip: View {
 
 // MARK: - Tab identifiers
 
-enum DiscoverTab: Equatable { case discover, watchlist, profile }
+enum DiscoverTab: Equatable { case discover, mood, watchlist, search }

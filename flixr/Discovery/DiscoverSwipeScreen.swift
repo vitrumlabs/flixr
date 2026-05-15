@@ -20,7 +20,7 @@ private enum DeckItem: Identifiable {
 struct DiscoverSwipeScreen: View {
     var filters: MovieFilters
     var onOpenFilters: () -> Void
-    var onOpenSearch: () -> Void
+    var onOpenProfile: () -> Void
     var onOpenDetail: (Movie) -> Void
     var onShuffle: () -> Void
 
@@ -58,7 +58,7 @@ struct DiscoverSwipeScreen: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                DiscoveryTopBar(onSearch: onOpenSearch)
+                DiscoveryTopBar(onOpenProfile: onOpenProfile)
                     .padding(.top, 4)
 
                 Spacer().frame(height: 16)
@@ -97,43 +97,43 @@ struct DiscoverSwipeScreen: View {
                     }
                 }
 
-                HStack(spacing: 16) {
-                    ActionButton(kind: .skip, size: 84) {
-                        guard !currentDeck.isEmpty else { return }
-                        cardFlyDirection = -1
-                    }
-                    .disabled(currentDeck.isEmpty || isLoading || cardFlyDirection != nil)
+                GlassEffectContainer(spacing: 8) {
+                    HStack(spacing: 16) {
+                        ActionButton(kind: .skip, size: 84) {
+                            guard !currentDeck.isEmpty else { return }
+                            cardFlyDirection = -1
+                        }
+                        .disabled(currentDeck.isEmpty || isLoading || cardFlyDirection != nil)
 
-                    Button(action: onOpenFilters) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 52, height: 52)
-                    }
-                    .buttonStyle(.plain)
-                    .glassEffect(in: Circle())
-                    .accessibilityLabel("Open Filters")
+                        Button(action: onOpenFilters) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(.white)
+                                .frame(width: 52, height: 52)
+                        }
+                        .glassEffect(.regular.interactive(), in: .circle)
+                        .accessibilityLabel("Open Filters")
 
-                    Button(action: { shuffleTrigger += 1; onShuffle() }) {
-                        Image(systemName: "shuffle")
-                            .symbolEffect(.bounce, value: shuffleTrigger)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 52, height: 52)
-                    }
-                    .buttonStyle(.plain)
-                    .glassEffect(in: Circle())
-                    .accessibilityLabel("Shuffle")
-                    .sensoryFeedback(.impact(weight: .medium), trigger: shuffleTrigger)
+                        Button(action: { shuffleTrigger += 1; onShuffle() }) {
+                            Image(systemName: "shuffle")
+                                .symbolEffect(.bounce, value: shuffleTrigger)
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(.white)
+                                .frame(width: 52, height: 52)
+                        }
+                        .glassEffect(.regular.interactive(), in: .circle)
+                        .accessibilityLabel("Shuffle")
+                        .sensoryFeedback(.impact(weight: .medium), trigger: shuffleTrigger)
 
-                    ActionButton(kind: .like, size: 84) {
-                        guard !currentDeck.isEmpty else { return }
-                        cardFlyDirection = 1
+                        ActionButton(kind: .like, size: 84) {
+                            guard !currentDeck.isEmpty else { return }
+                            cardFlyDirection = 1
+                        }
+                        .disabled(currentDeck.isEmpty || isLoading || cardFlyDirection != nil)
                     }
-                    .disabled(currentDeck.isEmpty || isLoading || cardFlyDirection != nil)
                 }
                 .padding(.top, 20)
-                .padding(.bottom, 20)
+                .padding(.bottom, 36)
             }
         }
         .preferredColorScheme(.dark)

@@ -5,7 +5,6 @@ import FirebaseAnalytics
 
 private enum DiscoverNav: Equatable {
     case swipe
-    case search
     case detail(Movie)
 }
 
@@ -20,7 +19,9 @@ struct DiscoveryFlowView: View {
     @State private var activeTab: DiscoverTab = .discover
     @State private var discoverNav: DiscoverNav = .swipe
     @State private var watchlistNav: WatchlistNav = .list
+    @State private var searchMovie: Movie? = nil
     @State private var showFilters = false
+    @State private var showProfile = false
     @State private var activeFilters = MovieFilters.default
 
     var body: some View {
@@ -29,16 +30,22 @@ struct DiscoveryFlowView: View {
                 discoverTab
                     .toolbar(discoverNav != .swipe || showFilters ? .hidden : .visible, for: .tabBar)
             }
+            Tab("Mood", systemImage: "theatermasks", value: DiscoverTab.mood) {
+                MoodPlaceholderView()
+            }
             Tab("Watchlist", systemImage: "bookmark", value: DiscoverTab.watchlist) {
                 watchlistTab
                     .toolbar(watchlistNav != .list ? .hidden : .visible, for: .tabBar)
             }
-            Tab("Profile", systemImage: "person", value: DiscoverTab.profile) {
-                ProfileView()
+            Tab("Search", systemImage: "magnifyingglass", value: DiscoverTab.search, role: .search) {
+                searchTab
             }
         }
         .tint(.flxRed)
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
+        }
     }
 
     // MARK: Discover tab
@@ -67,7 +74,7 @@ struct DiscoveryFlowView: View {
                 DiscoverSwipeScreen(
                     filters: activeFilters,
                     onOpenFilters: { withAnimation { showFilters = true } },
-                    onOpenSearch: { withAnimation { discoverNav = .search } },
+                    onOpenProfile: { showProfile = true },
                     onOpenDetail: { movie in
                         Analytics.logMovieDetailViewed(movie)
                         withAnimation { discoverNav = .detail(movie) }
@@ -75,14 +82,6 @@ struct DiscoveryFlowView: View {
                     onShuffle: {
                         Analytics.logShuffleTapped()
                         randomizeFilters()
-                    }
-                )
-            case .search:
-                DiscoverySearchView(
-                    onClose: { withAnimation { discoverNav = .swipe } },
-                    onOpenDetail: { movie in
-                        Analytics.logMovieDetailViewed(movie)
-                        withAnimation { discoverNav = .detail(movie) }
                     }
                 )
             case .detail(let movie):
@@ -125,5 +124,27 @@ struct DiscoveryFlowView: View {
             }
         }
         .animation(.easeInOut(duration: 0.22), value: watchlistNav)
+    }
+
+    // MARK: Search tab
+
+    @ViewBuilder
+    private var searchTab: some View {
+        ZStack {
+            if let movie = searchMovie {
+                MovieDetailView(movie: movie, onClose: { withAnimation { searchMovie = nil } })
+                    .id(movie.id)
+            } else {
+                DiscoverySearchView(
+                    onClose: { withAnimation { activeTab = .discover } },
+                    onOpenDetail: { movie in
+                        Analytics.logMovieDetailViewed(movie)
+                        withAnimation { searchMovie = movie }
+                    }
+                )
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: searchMovie?.id)
+        .toolbar(searchMovie != nil ? .hidden : .visible, for: .tabBar)
     }
 }
