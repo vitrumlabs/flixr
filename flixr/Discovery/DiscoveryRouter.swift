@@ -147,11 +147,7 @@ struct DiscoveryFlowView: View {
                     }
                 )
                 .navigationTitle("Search")
-                .searchable(
-                    text: $searchQuery,
-                    placement: .navigationBarDrawer(displayMode: .always),
-                    prompt: "Search by title..."
-                )
+                .searchable(text: $searchQuery, placement: .toolbar, prompt: "Search by title...")
             }
             .animation(.easeInOut(duration: 0.22), value: searchMovie?.id)
         }
