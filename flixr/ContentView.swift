@@ -7,7 +7,10 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if !auth.isReady {
-                LoadingView(title: "Flixr", sub: "Finding your next watch…")
+                ZStack {
+                        Color.black.ignoresSafeArea()
+                        FlxLogo(size: 48)
+                    }
                     .transition(.opacity)
             } else if auth.isSigningOut {
                 LoadingView(title: "Signing out", sub: "See you next time.")

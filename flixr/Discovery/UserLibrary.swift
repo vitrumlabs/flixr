@@ -136,23 +136,6 @@ final class UserLibrary {
         Analytics.logMovieSkipped(movie)
     }
 
-    // MARK: - Swipe history (feeds AI recommendations)
-
-    func recordSwipe(_ movie: Movie, liked: Bool) async {
-        guard let uid else { return }
-        let entry: [String: Any] = [
-            "movieId": movie.id,
-            "title": movie.title,
-            "year": movie.year,
-            "genres": movie.genres,
-            "rating": movie.rating,
-            "liked": liked,
-        ]
-        try? await db.collection("users").document(uid).updateData([
-            "recentSwipes": FieldValue.arrayUnion([entry])
-        ])
-    }
-
     // MARK: - Watchlist
 
     func addToWatchlist(_ movie: Movie) async {

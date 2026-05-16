@@ -67,7 +67,8 @@ struct DiscoverSwipeScreen: View {
                         } else if deck.fetchError || deck.movies.isEmpty {
                             errorCard(width: geo.size.width - 28, maxHeight: geo.size.height)
                         } else if currentItems.isEmpty {
-                            doneCard(width: geo.size.width - 28, maxHeight: geo.size.height)
+                            loadingCard(width: geo.size.width - 28, maxHeight: geo.size.height)
+                                .task { await deck.refillIfNeeded(filters: filters) }
                         } else {
                             CardStackView(
                                 deck: currentItems,
@@ -78,21 +79,13 @@ struct DiscoverSwipeScreen: View {
                                 onLike: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        deck.totalSwipes += 1
-                                        Task {
-                                            await library.like(movie)
-                                            await library.recordSwipe(movie, liked: true)
-                                        }
+                                        Task { await library.like(movie) }
                                     }
                                 },
                                 onSkip: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        deck.totalSwipes += 1
-                                        Task {
-                                            await library.skip(movie)
-                                            await library.recordSwipe(movie, liked: false)
-                                        }
+                                        Task { await library.skip(movie) }
                                     }
                                 },
                                 onTap: { onOpenDetail($0) }
@@ -176,17 +169,24 @@ struct DiscoverSwipeScreen: View {
         if wasAd { adLoader.loadNext() }
 
         let moviesLeft = currentItems.filter { if case .movie = $0 { return true }; return false }.count
-        if moviesLeft < 5 { Task { await deck.loadMore(filters: filters) } }
+        if moviesLeft < 15 { Task { await deck.refillIfNeeded(filters: filters) } }
     }
 
     // MARK: - State cards
 
     private func loadingCard(width: CGFloat, maxHeight: CGFloat) -> some View {
-        VStack(spacing: 16) {
-            ProgressView().tint(.white)
-            Text("Finding films for you…")
-                .font(.system(size: 15))
-                .foregroundColor(.dFg3)
+        VStack(spacing: 28) {
+            FlxSpinner()
+            VStack(spacing: 6) {
+                Text("Finding Films")
+                    .font(.flxDisplay(28))
+                    .tracking(-0.7)
+                    .foregroundColor(.white)
+                Text("Curating your next watch…")
+                    .font(.system(size: 15))
+                    .foregroundColor(.fg2)
+            }
+            .multilineTextAlignment(.center)
         }
         .frame(width: width, height: min(width / 0.66, maxHeight))
         .background(Color.white.opacity(0.04))
@@ -202,24 +202,6 @@ struct DiscoverSwipeScreen: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
             Button("Try again") { adLoader.loadNext(); Task { await deck.loadMovies(filters: filters) } }
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.flxRed)
-                .frame(minWidth: 44, minHeight: 44)
-        }
-        .frame(width: width, height: min(width / 0.66, maxHeight))
-        .background(Color.white.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-    }
-
-    private func doneCard(width: CGFloat, maxHeight: CGFloat) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "checkmark.circle")
-                .font(.system(size: 36))
-                .foregroundColor(.dFg3)
-            Text("You've seen everything!")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(.white)
-            Button("Load more") { Task { await deck.loadMore(filters: filters) } }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.flxRed)
                 .frame(minWidth: 44, minHeight: 44)
