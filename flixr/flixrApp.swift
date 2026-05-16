@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseCore
+import FirebaseAppCheck
 import GoogleSignIn
 import GoogleMobileAds
 
@@ -12,6 +13,11 @@ struct flixrApp: App {
     @State private var library: UserLibrary
 
     init() {
+        #if DEBUG
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
+        #else
+        AppCheck.setAppCheckProviderFactory(AppAttestProviderFactory())
+        #endif
         FirebaseApp.configure()
         MobileAds.shared.start()
         _authManager = State(initialValue: AuthManager())
