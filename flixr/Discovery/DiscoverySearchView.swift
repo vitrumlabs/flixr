@@ -49,6 +49,12 @@ struct DiscoverySearchView: View {
 
     // MARK: Empty state
 
+    private let gridColumns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
+    ]
+
     private var emptyStateContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionHeader("Trending")
@@ -57,25 +63,22 @@ struct DiscoverySearchView: View {
                 .padding(.bottom, 16)
 
             if trendingEntries.isEmpty {
-                HStack(spacing: 14) {
-                    ForEach(0..<6, id: \.self) { _ in
+                LazyVGrid(columns: gridColumns, spacing: 14) {
+                    ForEach(0..<9, id: \.self) { _ in
                         TrendingCardPlaceholder()
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(alignment: .top, spacing: 14) {
-                        ForEach(trendingEntries) { entry in
-                            Button(action: { query = entry.name }) {
-                                TrendingCard(entry: entry)
-                            }
-                            .buttonStyle(.plain)
+                LazyVGrid(columns: gridColumns, spacing: 14) {
+                    ForEach(trendingEntries) { entry in
+                        Button(action: { query = entry.name }) {
+                            TrendingCard(entry: entry)
                         }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 4)
                 }
+                .padding(.horizontal, 16)
                 .transition(.opacity)
             }
 
@@ -218,7 +221,7 @@ private struct TrendingCard: View {
     let entry: TrendingEntry
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             AsyncImage(url: entry.imageURL) { phase in
                 if case .success(let image) = phase {
                     image.resizable().scaledToFill()
@@ -226,7 +229,7 @@ private struct TrendingCard: View {
                     Color.white.opacity(0.06)
                 }
             }
-            .frame(width: 80, height: 120)
+            .aspectRatio(2/3, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
@@ -238,20 +241,21 @@ private struct TrendingCard: View {
                 .foregroundColor(Color.dFg2)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
-                .frame(width: 80)
+                .frame(maxWidth: .infinity)
         }
     }
 }
 
 private struct TrendingCardPlaceholder: View {
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color.white.opacity(0.06))
-                .frame(width: 80, height: 120)
+                .aspectRatio(2/3, contentMode: .fit)
             RoundedRectangle(cornerRadius: 4)
                 .fill(Color.white.opacity(0.06))
-                .frame(width: 60, height: 11)
+                .frame(height: 11)
+                .padding(.horizontal, 8)
         }
     }
 }
