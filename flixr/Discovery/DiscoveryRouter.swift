@@ -133,12 +133,8 @@ struct DiscoveryFlowView: View {
 
     @ViewBuilder
     private var searchTab: some View {
-        if let movie = searchMovie {
-            MovieDetailView(movie: movie, onClose: { withAnimation { searchMovie = nil; searchQuery = "" } })
-                .id(movie.id)
-                .toolbar(.hidden, for: .tabBar)
-        } else {
-            NavigationStack {
+        NavigationStack {
+            ZStack {
                 DiscoverySearchView(
                     query: $searchQuery,
                     onOpenDetail: { movie in
@@ -146,10 +142,18 @@ struct DiscoveryFlowView: View {
                         withAnimation { searchMovie = movie }
                     }
                 )
-                .navigationTitle("Search")
-                .searchable(text: $searchQuery, placement: .toolbar, prompt: "Search by title...")
+
+                if let movie = searchMovie {
+                    MovieDetailView(movie: movie, onClose: {
+                        withAnimation { searchMovie = nil; searchQuery = "" }
+                    })
+                    .id(movie.id)
+                }
             }
+            .navigationTitle("Search")
+            .searchable(text: $searchQuery, prompt: "Search by title...")
             .animation(.easeInOut(duration: 0.22), value: searchMovie?.id)
         }
+        .toolbar(searchMovie != nil ? .hidden : .visible, for: .tabBar)
     }
 }
