@@ -182,8 +182,68 @@ class AuthManager: NSObject {
 
     func deleteAccount() async throws {
         guard let currentUser = Auth.auth().currentUser else { return }
-        try await currentUser.delete()
+        do {
+            try await currentUser.delete()
+        } catch let error as NSError where error.code == AuthErrorCode.requiresRecentLogin.rawValue {
+            try await reauthenticate(user: currentUser)
+            try await currentUser.delete()
+        }
         GIDSignIn.sharedInstance.signOut()
+    }
+
+    private func reauthenticate(user: FirebaseAuth.User) async throws {
+        let providerIDs = user.providerData.map(\.providerID)
+
+        if providerIDs.contains("google.com") {
+            guard let clientID = FirebaseApp.app()?.options.clientID else {
+                throw AuthError.googleNotConfigured
+            }
+            let rootVC = try await MainActor.run {
+                guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                      let rootVC = scene.windows.first?.rootViewController
+                else { throw AuthError.missingCredential }
+                return rootVC
+            }
+            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootVC)
+            guard let idToken = result.user.idToken?.tokenString else {
+                throw AuthError.missingCredential
+            }
+            let credential = GoogleAuthProvider.credential(
+                withIDToken: idToken,
+                accessToken: result.user.accessToken.tokenString
+            )
+            try await user.reauthenticate(with: credential)
+
+        } else if providerIDs.contains("apple.com") {
+            let nonce = randomNonce()
+            currentNonce = nonce
+            let request = ASAuthorizationAppleIDProvider().createRequest()
+            request.requestedScopes = [.fullName, .email]
+            request.nonce = sha256(nonce)
+            let authorization = try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<ASAuthorization, Error>) in
+                let delegate = AppleSignInDelegate(continuation: continuation)
+                let controller = ASAuthorizationController(authorizationRequests: [request])
+                controller.delegate = delegate
+                controller.presentationContextProvider = delegate
+                controller.performRequests()
+                objc_setAssociatedObject(controller, "delegate", delegate, .OBJC_ASSOCIATION_RETAIN)
+            }
+            guard
+                let appleCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                let tokenData = appleCredential.identityToken,
+                let token = String(data: tokenData, encoding: .utf8),
+                let nonce = currentNonce
+            else { throw AuthError.missingCredential }
+            let credential = OAuthProvider.appleCredential(
+                withIDToken: token,
+                rawNonce: nonce,
+                fullName: appleCredential.fullName
+            )
+            try await user.reauthenticate(with: credential)
+        }
+        // Email/password: no silent re-auth possible; caller surfaces the error
     }
 
 }
