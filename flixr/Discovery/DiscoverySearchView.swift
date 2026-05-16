@@ -10,11 +10,8 @@ struct DiscoverySearchView: View {
     @State private var query = ""
     @State private var results: [Movie] = []
     @State private var isSearching = false
-    @State private var popularMovies: [Movie] = []
+    @State private var trendingEntries: [TrendingEntry] = []
     @FocusState private var isSearchFocused: Bool
-    @Environment(UserLibrary.self) private var library
-
-    private let trending = ["Christopher Nolan", "Parasite", "Denis Villeneuve", "Oppenheimer", "Greta Gerwig"]
 
     private var hasQuery: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -60,7 +57,7 @@ struct DiscoverySearchView: View {
                 isSearchFocused = true
             }
             Task {
-                popularMovies = (try? await MovieService.shared.fetchPopular()) ?? []
+                trendingEntries = (try? await MovieService.shared.fetchTrending()) ?? []
             }
         }
         .preferredColorScheme(.dark)
@@ -79,73 +76,37 @@ struct DiscoverySearchView: View {
 
     private var emptyStateContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if !popularMovies.isEmpty {
-                sectionHeader("Popular now")
-                    .padding(.horizontal, 20)
-                    .padding(.top, 24)
-                    .padding(.bottom, 12)
+            sectionHeader("Trending")
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                .padding(.bottom, 16)
 
+            if trendingEntries.isEmpty {
+                HStack(spacing: 14) {
+                    ForEach(0..<6, id: \.self) { _ in
+                        TrendingCardPlaceholder()
+                    }
+                }
+                .padding(.horizontal, 20)
+            } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(popularMovies.prefix(12)) { movie in
-                            Button(action: { onOpenDetail(movie) }) {
-                                PosterArt(movie: movie, width: 90)
+                    HStack(alignment: .top, spacing: 14) {
+                        ForEach(trendingEntries) { entry in
+                            Button(action: { query = entry.name }) {
+                                TrendingCard(entry: entry)
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal, 20)
+                    .padding(.vertical, 4)
                 }
                 .transition(.opacity)
             }
 
-            sectionHeader("Trending")
-                .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 12)
-
-            GlassEffectContainer(spacing: 0) {
-                FlowLayout(spacing: 8, lineSpacing: 8) {
-                    ForEach(trending, id: \.self) { t in
-                        Button(action: { query = t }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "bolt.fill")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.flxRed)
-                                Text(t)
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 14)
-                        }
-                        .glassEffect(.regular.interactive(), in: .capsule)
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-
-            let watchlistMovies = library.watchlist.map { $0.asMovie() }
-            if !watchlistMovies.isEmpty {
-                sectionHeader("On your watchlist")
-                    .padding(.horizontal, 20)
-                    .padding(.top, 28)
-                    .padding(.bottom, 12)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(watchlistMovies.prefix(12)) { movie in
-                            Button(action: { onOpenDetail(movie) }) {
-                                PosterArt(movie: movie, width: 90)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
-            }
-
             Spacer().frame(height: 32)
         }
-        .animation(.easeIn(duration: 0.3), value: popularMovies.isEmpty)
+        .animation(.easeIn(duration: 0.25), value: trendingEntries.isEmpty)
     }
 
     // MARK: Results state
@@ -316,44 +277,70 @@ private struct SearchField: View {
     }
 }
 
-// MARK: - Flow layout
+// MARK: - Trending card
 
-private struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-    var lineSpacing: CGFloat = 8
+private struct TrendingCard: View {
+    let entry: TrendingEntry
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? 0
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var lineH: CGFloat = 0
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                switch entry.kind {
+                case .movie:
+                    AsyncImage(url: entry.imageURL) { phase in
+                        if case .success(let image) = phase {
+                            image.resizable().scaledToFill()
+                        } else {
+                            Color.white.opacity(0.06)
+                        }
+                    }
+                    .frame(width: 80, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                    )
 
-        for view in subviews {
-            let size = view.sizeThatFits(.unspecified)
-            if x + size.width > maxWidth, x > 0 {
-                y += lineH + lineSpacing
-                x = 0; lineH = 0
+                case .person:
+                    AsyncImage(url: entry.imageURL) { phase in
+                        if case .success(let image) = phase {
+                            image.resizable().scaledToFill()
+                        } else {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(Color.white.opacity(0.25))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(Color.white.opacity(0.06))
+                        }
+                    }
+                    .frame(width: 80, height: 80)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                }
             }
-            lineH = max(lineH, size.height)
-            x += size.width + spacing
+            .frame(width: 80, height: 120)
+
+            Text(entry.name)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color.dFg2)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(width: 80)
         }
-        return CGSize(width: maxWidth, height: y + lineH)
     }
+}
 
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var lineH: CGFloat = 0
-
-        for view in subviews {
-            let size = view.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX, x > bounds.minX {
-                y += lineH + lineSpacing
-                x = bounds.minX; lineH = 0
-            }
-            view.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            lineH = max(lineH, size.height)
-            x += size.width + spacing
+private struct TrendingCardPlaceholder: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white.opacity(0.06))
+                .frame(width: 80, height: 120)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color.white.opacity(0.06))
+                .frame(width: 60, height: 11)
         }
     }
 }

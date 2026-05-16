@@ -41,6 +41,25 @@ struct WatchProvider: Identifiable, Hashable {
     let logoPath: String?
 }
 
+// MARK: - Trending entry
+
+struct TrendingEntry: Identifiable {
+    let id: String
+    let name: String
+    let kind: Kind
+    let imagePath: String?
+
+    enum Kind: String { case movie, person }
+
+    var imageURL: URL? {
+        guard let path = imagePath else { return nil }
+        switch kind {
+        case .movie:  return TMDBImage.posterURL(path, width: 185)
+        case .person: return TMDBImage.profileURL(path)
+        }
+    }
+}
+
 // MARK: - Service
 
 struct MovieService {
@@ -72,6 +91,21 @@ struct MovieService {
             guard let name = dict["provider_name"] as? String,
                   let providerId = dict["provider_id"] as? Int else { return nil }
             return WatchProvider(id: providerId, name: name, logoPath: dict["logo_path"] as? String)
+        }
+    }
+
+    func fetchTrending() async throws -> [TrendingEntry] {
+        let result = try await functions.httpsCallable("getTrending").call()
+        let root = result.data as? [String: Any] ?? [:]
+        let items = root["trending"] as? [[String: Any]] ?? []
+        return items.compactMap { dict -> TrendingEntry? in
+            guard let id = dict["id"] as? String,
+                  let name = dict["name"] as? String,
+                  let kindStr = dict["kind"] as? String,
+                  let kind = TrendingEntry.Kind(rawValue: kindStr)
+            else { return nil }
+            return TrendingEntry(id: id, name: name, kind: kind,
+                                 imagePath: dict["imagePath"] as? String)
         }
     }
 
