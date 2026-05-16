@@ -4,14 +4,12 @@ import FirebaseAnalytics
 // MARK: - Screen 19: Search
 
 struct DiscoverySearchView: View {
-    var onClose: () -> Void
+    @Binding var query: String
     var onOpenDetail: (Movie) -> Void
 
-    @State private var query = ""
     @State private var results: [Movie] = []
     @State private var isSearching = false
     @State private var trendingEntries: [TrendingEntry] = []
-    @FocusState private var isSearchFocused: Bool
 
     private var hasQuery: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -24,38 +22,15 @@ struct DiscoverySearchView: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                GlassEffectContainer(spacing: 10) {
-                    HStack(spacing: 10) {
-                        Button(action: onClose) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                        }
-                        .glassEffect(.regular.interactive(), in: Circle())
-                        .accessibilityLabel("Close")
-
-                        SearchField(text: $query, isFocused: $isSearchFocused, isSearching: isSearching)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                }
-
-                ScrollView(showsIndicators: false) {
-                    if hasQuery {
-                        resultsContent
-                    } else {
-                        emptyStateContent
-                    }
+            ScrollView(showsIndicators: false) {
+                if hasQuery {
+                    resultsContent
+                } else {
+                    emptyStateContent
                 }
             }
         }
         .onAppear {
-            Task {
-                try? await Task.sleep(for: .milliseconds(150))
-                isSearchFocused = true
-            }
             Task {
                 trendingEntries = (try? await MovieService.shared.fetchTrending()) ?? []
             }
@@ -235,46 +210,6 @@ struct DiscoverySearchView: View {
             .foregroundColor(Color.dFg3)
     }
 
-}
-
-// MARK: - Search field
-
-private struct SearchField: View {
-    @Binding var text: String
-    var isFocused: FocusState<Bool>.Binding
-    var isSearching: Bool = false
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 16))
-                .foregroundColor(Color.dFg3)
-                .symbolEffect(.bounce, value: isFocused.wrappedValue)
-                .symbolEffect(.pulse, isActive: isSearching)
-            TextField("Search by title or person…", text: $text)
-                .font(.system(size: 15))
-                .foregroundColor(.white)
-                .tint(.flxRed)
-                .focused(isFocused)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-            if !text.isEmpty {
-                Button(action: { text = "" }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 22, height: 22)
-                        .background(Color.white.opacity(0.18))
-                        .clipShape(Circle())
-                }
-                .frame(minWidth: 44, minHeight: 44)
-                .accessibilityLabel("Clear search")
-            }
-        }
-        .padding(.horizontal, 14)
-        .frame(height: 46)
-        .glassEffect(.regular, in: .capsule)
-    }
 }
 
 // MARK: - Trending card
