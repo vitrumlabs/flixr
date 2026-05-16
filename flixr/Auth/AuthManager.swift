@@ -1,6 +1,7 @@
 import Foundation
 import FirebaseCore
 import FirebaseAuth
+import FirebaseCrashlytics
 import FirebaseFunctions
 import GoogleSignIn
 import AuthenticationServices
@@ -28,6 +29,7 @@ class AuthManager: NSObject {
         authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, u in
             self?.user = u?.isEmailVerified == true ? u : nil
             self?.isReady = true
+            Crashlytics.crashlytics().setUserID(u?.uid ?? "")
         }
     }
 
