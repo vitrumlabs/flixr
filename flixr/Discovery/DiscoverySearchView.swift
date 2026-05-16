@@ -6,8 +6,6 @@ import FirebaseAnalytics
 struct DiscoverySearchView: View {
     var onClose: () -> Void
     var onOpenDetail: (Movie) -> Void
-    var onBrowseGenre: ((String) -> Void)? = nil
-
     @State private var query = ""
     @State private var results: [Movie] = []
     @State private var isSearching = false
@@ -99,36 +97,6 @@ struct DiscoverySearchView: View {
             }
             .padding(.horizontal, 20)
 
-            sectionHeader("Genres")
-                .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 12)
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ForEach(genreTiles, id: \.name) { tile in
-                    Button(action: {
-                        if let browse = onBrowseGenre {
-                            browse(tile.name)
-                        } else {
-                            query = tile.name
-                        }
-                    }) {
-                        ZStack(alignment: .bottomLeading) {
-                            LinearGradient(colors: [tile.colorA, tile.colorB], startPoint: .topLeading, endPoint: .bottomTrailing)
-                            Text(tile.name)
-                                .font(.flxDisplay(18))
-                                .tracking(-0.1)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 14)
-                                .padding(.bottom, 12)
-                        }
-                        .frame(height: 64)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
         }
     }
 
@@ -258,14 +226,6 @@ struct DiscoverySearchView: View {
             .foregroundColor(Color.dFg3)
     }
 
-    private var genreTiles: [(name: String, colorA: Color, colorB: Color)] {[
-        (name: "Sci-Fi",   colorA: Color(hex: "3a1556"), colorB: Color(hex: "1a0a30")),
-        (name: "Drama",    colorA: Color(hex: "4a2810"), colorB: Color(hex: "1a0e05")),
-        (name: "Thriller", colorA: Color(hex: "0d2a4a"), colorB: Color(hex: "040d1a")),
-        (name: "Horror",   colorA: Color(hex: "3d0a12"), colorB: Color(hex: "1a0608")),
-        (name: "Romance",  colorA: Color(hex: "0e3a3a"), colorB: Color(hex: "031414")),
-        (name: "Western",  colorA: Color(hex: "5a2a08"), colorB: Color(hex: "1f1004")),
-    ]}
 }
 
 // MARK: - Search field
