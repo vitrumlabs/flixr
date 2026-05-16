@@ -30,26 +30,30 @@ struct DiscoverySearchView: View {
 
             VStack(spacing: 0) {
                 // Header
-                HStack(spacing: 10) {
-                    Button(action: onClose) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                    }
-                    .glassEffect(in: Circle())
-                    .accessibilityLabel("Close")
+                GlassEffectContainer(spacing: 10) {
+                    HStack(spacing: 10) {
+                        Button(action: onClose) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                        }
+                        .glassEffect(.regular.interactive(), in: Circle())
+                        .accessibilityLabel("Close")
 
-                    SearchField(text: $query, isFocused: $isSearchFocused)
+                        SearchField(text: $query, isFocused: $isSearchFocused)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
 
                 // Scope chips
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(scopes, id: \.self) { s in
-                            ScopeChip(label: s, isActive: s == scope) { scope = s }
+                            ScopeChip(label: s, isActive: s == scope) {
+                                withAnimation(.bouncy) { scope = s }
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -65,7 +69,12 @@ struct DiscoverySearchView: View {
                 }
             }
         }
-        .onAppear { isSearchFocused = true }
+        .onAppear {
+            Task {
+                try? await Task.sleep(for: .milliseconds(150))
+                isSearchFocused = true
+            }
+        }
         .preferredColorScheme(.dark)
         .task(id: query) {
             guard hasQuery else { results = []; return }
@@ -137,10 +146,8 @@ struct DiscoverySearchView: View {
                         }
                         .padding(.vertical, 8)
                         .padding(.horizontal, 14)
-                        .background(Color.white.opacity(0.04))
-                        .clipShape(Capsule())
-                        .overlay(Capsule().strokeBorder(Color.dLine, lineWidth: 1))
                     }
+                    .glassEffect(.regular.interactive(), in: .capsule)
                 }
             }
             .padding(.horizontal, 20)
@@ -343,15 +350,7 @@ private struct SearchField: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 46)
-        .background(Color.white.opacity(0.06))
-        .clipShape(Capsule())
-        .overlay(
-            Capsule().strokeBorder(
-                !text.isEmpty ? Color.flxRed.opacity(0.55) : Color.dLine,
-                lineWidth: 1
-            )
-        )
-        .shadow(color: !text.isEmpty ? Color.flxRed.opacity(0.12) : .clear, radius: 4)
+        .glassEffect(!text.isEmpty ? .regular.tint(.flxRed) : .regular, in: .capsule)
     }
 }
 
@@ -369,15 +368,8 @@ private struct ScopeChip: View {
                 .foregroundColor(isActive ? .white : Color.dFg2)
                 .padding(.vertical, 7)
                 .padding(.horizontal, 14)
-                .background(
-                    isActive
-                    ? AnyView(LinearGradient(colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")], startPoint: .top, endPoint: .bottom))
-                    : AnyView(Color.white.opacity(0.04))
-                )
-                .clipShape(Capsule())
-                .overlay(Capsule().strokeBorder(isActive ? Color.clear : Color.dLine, lineWidth: 1))
-                .shadow(color: isActive ? Color.flxRed.opacity(0.32) : .clear, radius: 7, y: 3)
         }
+        .glassEffect(isActive ? .regular.tint(.flxRed).interactive() : .regular.interactive(), in: .capsule)
         .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
