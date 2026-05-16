@@ -6,10 +6,13 @@ import FirebaseAnalytics
 struct DiscoverySearchView: View {
     var onClose: () -> Void
     var onOpenDetail: (Movie) -> Void
+
     @State private var query = ""
     @State private var results: [Movie] = []
     @State private var isSearching = false
+    @State private var popularMovies: [Movie] = []
     @FocusState private var isSearchFocused: Bool
+    @Environment(UserLibrary.self) private var library
 
     private let trending = ["Christopher Nolan", "Parasite", "Denis Villeneuve", "Oppenheimer", "Greta Gerwig"]
 
@@ -56,6 +59,9 @@ struct DiscoverySearchView: View {
                 try? await Task.sleep(for: .milliseconds(150))
                 isSearchFocused = true
             }
+            Task {
+                popularMovies = (try? await MovieService.shared.fetchPopular()) ?? []
+            }
         }
         .preferredColorScheme(.dark)
         .task(id: query) {
@@ -73,9 +79,28 @@ struct DiscoverySearchView: View {
 
     private var emptyStateContent: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if !popularMovies.isEmpty {
+                sectionHeader("Popular now")
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    .padding(.bottom, 12)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(popularMovies.prefix(12)) { movie in
+                            Button(action: { onOpenDetail(movie) }) {
+                                PosterArt(movie: movie, width: 90)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+                .transition(.opacity)
+            }
+
             sectionHeader("Trending")
                 .padding(.horizontal, 20)
-                .padding(.top, 24)
+                .padding(.top, 28)
                 .padding(.bottom, 12)
 
             GlassEffectContainer(spacing: 0) {
@@ -99,7 +124,28 @@ struct DiscoverySearchView: View {
             }
             .padding(.horizontal, 20)
 
+            let watchlistMovies = library.watchlist.map { $0.asMovie() }
+            if !watchlistMovies.isEmpty {
+                sectionHeader("On your watchlist")
+                    .padding(.horizontal, 20)
+                    .padding(.top, 28)
+                    .padding(.bottom, 12)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(watchlistMovies.prefix(12)) { movie in
+                            Button(action: { onOpenDetail(movie) }) {
+                                PosterArt(movie: movie, width: 90)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+            }
+
+            Spacer().frame(height: 32)
         }
+        .animation(.easeIn(duration: 0.3), value: popularMovies.isEmpty)
     }
 
     // MARK: Results state
