@@ -21,6 +21,7 @@ struct DiscoveryFlowView: View {
     @State private var discoverDeck = DiscoverDeck()
     @State private var watchlistNav: WatchlistNav = .list
     @State private var searchMovie: Movie? = nil
+    @State private var searchQuery = ""
     @State private var showFilters = false
     @State private var showProfile = false
     @State private var activeFilters = MovieFilters.default
@@ -133,20 +134,26 @@ struct DiscoveryFlowView: View {
     @ViewBuilder
     private var searchTab: some View {
         ZStack {
-            if let movie = searchMovie {
-                MovieDetailView(movie: movie, onClose: { withAnimation { searchMovie = nil } })
-                    .id(movie.id)
-            } else {
+            NavigationStack {
                 DiscoverySearchView(
-                    onClose: { withAnimation { activeTab = .discover } },
+                    query: $searchQuery,
                     onOpenDetail: { movie in
                         Analytics.logMovieDetailViewed(movie)
                         withAnimation { searchMovie = movie }
                     }
                 )
+                .navigationTitle("Search")
+                .searchable(text: $searchQuery, prompt: "Search by title...")
+            }
+
+            if let movie = searchMovie {
+                MovieDetailView(movie: movie, onClose: {
+                    withAnimation { searchMovie = nil; searchQuery = "" }
+                })
+                .id(movie.id)
             }
         }
-        .animation(.easeInOut(duration: 0.22), value: searchMovie?.id)
         .toolbar(searchMovie != nil ? .hidden : .visible, for: .tabBar)
+        .animation(.easeInOut(duration: 0.22), value: searchMovie?.id)
     }
 }
