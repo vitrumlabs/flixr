@@ -46,7 +46,7 @@ struct WatchProvider: Identifiable, Hashable {
 struct MovieService {
     static let shared = MovieService()
 
-    private let functions = Functions.functions(region: "us-central1")
+    private let functions = Functions.functions(region: "europe-west1")
 
     func fetchPopular(page: Int = 1) async throws -> [Movie] {
         let result = try await functions.httpsCallable("getPopularMovies").call(["page": page])
