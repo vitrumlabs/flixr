@@ -138,14 +138,21 @@ struct DiscoveryFlowView: View {
                 .id(movie.id)
                 .toolbar(.hidden, for: .tabBar)
         } else {
-            DiscoverySearchView(
-                query: $searchQuery,
-                onOpenDetail: { movie in
-                    Analytics.logMovieDetailViewed(movie)
-                    withAnimation { searchMovie = movie }
-                }
-            )
-            .searchable(text: $searchQuery, prompt: "Search by title or person…")
+            NavigationStack {
+                DiscoverySearchView(
+                    query: $searchQuery,
+                    onOpenDetail: { movie in
+                        Analytics.logMovieDetailViewed(movie)
+                        withAnimation { searchMovie = movie }
+                    }
+                )
+                .navigationTitle("Search")
+                .searchable(
+                    text: $searchQuery,
+                    placement: .navigationBarDrawer(displayMode: .always),
+                    prompt: "Search by title or person…"
+                )
+            }
             .animation(.easeInOut(duration: 0.22), value: searchMovie?.id)
         }
     }

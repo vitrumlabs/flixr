@@ -219,43 +219,19 @@ private struct TrendingCard: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            ZStack {
-                switch entry.kind {
-                case .movie:
-                    AsyncImage(url: entry.imageURL) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill()
-                        } else {
-                            Color.white.opacity(0.06)
-                        }
-                    }
-                    .frame(width: 80, height: 120)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
-                    )
-
-                case .person:
-                    AsyncImage(url: entry.imageURL) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill()
-                        } else {
-                            Image(systemName: "person.fill")
-                                .font(.system(size: 28))
-                                .foregroundColor(Color.white.opacity(0.25))
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .background(Color.white.opacity(0.06))
-                        }
-                    }
-                    .frame(width: 80, height: 80)
-                    .clipShape(Circle())
-                    .overlay(
-                        Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
-                    )
+            AsyncImage(url: entry.imageURL) { phase in
+                if case .success(let image) = phase {
+                    image.resizable().scaledToFill()
+                } else {
+                    Color.white.opacity(0.06)
                 }
             }
             .frame(width: 80, height: 120)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+            )
 
             Text(entry.name)
                 .font(.system(size: 11, weight: .medium))
