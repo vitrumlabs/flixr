@@ -27,7 +27,11 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.35), value: auth.isSigningOut)
         .animation(.easeInOut(duration: 0.35), value: auth.user == nil)
         .task(id: auth.uid) {
-            if auth.uid != nil { await library.load() }
+            if let uid = auth.uid {
+                library.startListening(uid: uid)
+            } else {
+                library.stopListening()
+            }
         }
     }
 }

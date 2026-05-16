@@ -1,6 +1,5 @@
 import SwiftUI
 import FirebaseAuth
-import FirebaseFirestore
 
 // MARK: - Screen 23: Profile
 
@@ -8,8 +7,6 @@ struct ProfileView: View {
     @Environment(AuthManager.self) private var auth
     @Environment(UserLibrary.self) private var library
 
-    @State private var skippedCount = 0
-    @State private var isFlixrPlus  = false
     @State private var showDeleteConfirmation = false
     @State private var isDeletingAccount = false
     @State private var deleteError: String? = nil
@@ -32,9 +29,9 @@ struct ProfileView: View {
     }
 
     private var stats: [(String, String)] {[
-        ("Swiped",   (library.liked.count + skippedCount).formatted()),
-        ("Liked",    library.liked.count.formatted()),
-        ("Skipped",  skippedCount.formatted()),
+        ("Swiped",  (library.liked.count + library.skippedCount).formatted()),
+        ("Liked",   library.liked.count.formatted()),
+        ("Skipped", library.skippedCount.formatted()),
     ]}
 
     private let settingRows: [(label: String, sub: String, icon: String)] = [
@@ -106,7 +103,7 @@ struct ProfileView: View {
                                     .foregroundColor(Color.dFg3)
                             }
 
-                            if isFlixrPlus {
+                            if library.isFlixrPlus {
                                 HStack(spacing: 6) {
                                     Image(systemName: "star.fill")
                                         .font(.system(size: 10))
@@ -258,7 +255,6 @@ struct ProfileView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .task { await fetchStats() }
         .confirmationDialog(
             "Delete Account",
             isPresented: $showDeleteConfirmation,
@@ -289,14 +285,6 @@ struct ProfileView: View {
         }
     }
 
-    private func fetchStats() async {
-        guard let uid = user?.uid else { return }
-        guard let data = try? await Firestore.firestore()
-            .collection("users").document(uid).getDocument().data()
-        else { return }
-        skippedCount = (data["skipped"] as? [Any])?.count ?? 0
-        isFlixrPlus  = data["isFlixrPlus"] as? Bool ?? false
-    }
 }
 
 // MARK: - Genre chips (wrapping flow layout)
