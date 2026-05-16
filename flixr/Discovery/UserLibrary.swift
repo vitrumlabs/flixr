@@ -14,7 +14,6 @@ struct MovieSnapshot {
     let rating: Double
     let posterPath: String?
 
-    /// Reconstruct a displayable Movie from the stored snapshot
     func asMovie() -> Movie {
         Movie(
             id: id,
@@ -71,10 +70,11 @@ struct MovieSnapshot {
 
 @Observable
 final class UserLibrary {
-    private(set) var watchlist: [MovieSnapshot] = []
-    private(set) var liked: [MovieSnapshot]     = []
+    private(set) var watchlist:     [MovieSnapshot] = []
+    private(set) var liked:         [MovieSnapshot] = []
+    private(set) var isFlixrPlus:   Bool            = false
+    private(set) var skippedCount:  Int             = 0
 
-    // Derived from liked entries
     var topGenres: [String] {
         var counts: [String: Int] = [:]
         for snap in liked {
@@ -83,46 +83,61 @@ final class UserLibrary {
         return counts.sorted { $0.value > $1.value }.prefix(6).map(\.key)
     }
 
-    var likedIds: Set<String> { Set(liked.map(\.id)) }
+    var likedIds:     Set<String> { Set(liked.map(\.id)) }
+    var watchlistIds: Set<String> { Set(watchlist.map(\.id)) }
 
-    private let db  = Firestore.firestore()
+    private let db = Firestore.firestore()
     private var uid: String? { Auth.auth().currentUser?.uid }
+    private var listener: ListenerRegistration?
 
-    // MARK: - Load
+    deinit { listener?.remove() }
 
-    func load() async {
-        guard let uid else { return }
-        guard let data = try? await db.collection("users").document(uid).getDocument().data()
-        else { return }
+    // MARK: - Listener
 
-        if let raw = data["watchlist"] as? [[String: Any]] {
-            watchlist = raw.compactMap { MovieSnapshot($0) }
-        }
-        if let raw = data["liked"] as? [[String: Any]] {
-            liked = raw.compactMap { MovieSnapshot($0) }
-        }
+    func startListening(uid: String) {
+        listener?.remove()
+        listener = db.collection("users").document(uid)
+            .addSnapshotListener { [weak self] snapshot, _ in
+                guard let self, let data = snapshot?.data() else { return }
+                if let raw = data["watchlist"] as? [[String: Any]] {
+                    self.watchlist = raw.compactMap { MovieSnapshot($0) }
+                }
+                if let raw = data["liked"] as? [[String: Any]] {
+                    self.liked = raw.compactMap { MovieSnapshot($0) }
+                }
+                self.skippedCount = (data["skipped"] as? [Any])?.count ?? 0
+                self.isFlixrPlus  = data["isFlixrPlus"] as? Bool ?? false
+            }
+    }
+
+    func stopListening() {
+        listener?.remove()
+        listener = nil
+        watchlist    = []
+        liked        = []
+        isFlixrPlus  = false
+        skippedCount = 0
     }
 
     // MARK: - Like
+    // Optimistic local update for immediate UI response; listener reconciles from Firestore.
 
     func like(_ movie: Movie) async {
         guard let uid, !likedIds.contains(movie.id) else { return }
         let snap = movie.snapshot()
-        let entry = snap.toFirestore()
-        try? await db.collection("users").document(uid).updateData([
-            "liked": FieldValue.arrayUnion([entry])
-        ])
         liked.append(snap)
+        try? await db.collection("users").document(uid).updateData([
+            "liked": FieldValue.arrayUnion([snap.toFirestore()])
+        ])
         Analytics.logMovieLiked(movie)
     }
 
     func unlike(_ movie: Movie) async {
         guard let uid, let snap = liked.first(where: { $0.id == movie.id }) else { return }
-        let entry = snap.toFirestore()
-        try? await db.collection("users").document(uid).updateData([
-            "liked": FieldValue.arrayRemove([entry])
-        ])
         liked.removeAll { $0.id == movie.id }
+        try? await db.collection("users").document(uid).updateData([
+            "liked": FieldValue.arrayRemove([snap.toFirestore()])
+        ])
     }
 
     // MARK: - Skip
@@ -136,47 +151,26 @@ final class UserLibrary {
         Analytics.logMovieSkipped(movie)
     }
 
-    // MARK: - Swipe history (feeds AI recommendations)
-
-    func recordSwipe(_ movie: Movie, liked: Bool) async {
-        guard let uid else { return }
-        let entry: [String: Any] = [
-            "movieId": movie.id,
-            "title": movie.title,
-            "year": movie.year,
-            "genres": movie.genres,
-            "rating": movie.rating,
-            "liked": liked,
-        ]
-        try? await db.collection("users").document(uid).updateData([
-            "recentSwipes": FieldValue.arrayUnion([entry])
-        ])
-    }
-
     // MARK: - Watchlist
 
     func addToWatchlist(_ movie: Movie) async {
         guard let uid, !watchlistIds.contains(movie.id) else { return }
         let snap = movie.snapshot()
-        let entry = snap.toFirestore()
-        try? await db.collection("users").document(uid).updateData([
-            "watchlist": FieldValue.arrayUnion([entry])
-        ])
         watchlist.append(snap)
+        try? await db.collection("users").document(uid).updateData([
+            "watchlist": FieldValue.arrayUnion([snap.toFirestore()])
+        ])
         Analytics.logWatchlistAdd(movie)
     }
 
     func removeFromWatchlist(_ movie: Movie) async {
         guard let uid, let snap = watchlist.first(where: { $0.id == movie.id }) else { return }
-        let entry = snap.toFirestore()
-        try? await db.collection("users").document(uid).updateData([
-            "watchlist": FieldValue.arrayRemove([entry])
-        ])
         watchlist.removeAll { $0.id == movie.id }
+        try? await db.collection("users").document(uid).updateData([
+            "watchlist": FieldValue.arrayRemove([snap.toFirestore()])
+        ])
         Analytics.logWatchlistRemove(movie)
     }
-
-    var watchlistIds: Set<String> { Set(watchlist.map(\.id)) }
 }
 
 // MARK: - Movie → snapshot
@@ -184,12 +178,12 @@ final class UserLibrary {
 private extension Movie {
     func snapshot() -> MovieSnapshot {
         MovieSnapshot([
-            "id":      Int(id) ?? 0,
-            "title":   title,
-            "year":    year,
-            "runtime": runtime,
-            "genres":  genres,
-            "rating":  rating,
+            "id":         Int(id) ?? 0,
+            "title":      title,
+            "year":       year,
+            "runtime":    runtime,
+            "genres":     genres,
+            "rating":     rating,
             "posterPath": posterPath as Any,
         ])!
     }

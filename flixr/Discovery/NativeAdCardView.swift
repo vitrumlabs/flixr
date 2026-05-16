@@ -21,17 +21,18 @@ import UIKit
 //  └──────────────────────┘
 
 final class FlixrNativeAdView: NativeAdView {
-    private let adMediaView    = MediaView()
-    private let separator      = UIView()
-    private let badgeLabel     = UILabel()
-    private let iconImageView  = UIImageView()
-    private let headlineLabel  = UILabel()
-    private let bodyLabel      = UILabel()
-    private let ctaButton      = UIButton(type: .system)
+    private let adMediaView      = MediaView()
+    private let separator        = UIView()
+    private let badgeLabel       = UILabel()
+    private let iconImageView    = UIImageView()
+    private let advertiserLabel  = UILabel()
+    private let headlineLabel    = UILabel()
+    private let bodyLabel        = UILabel()
+    private let ctaButton        = UIButton(type: .system)
 
     // Toggled in populate() depending on whether an icon was provided
-    private var headlineTopToSeparator: NSLayoutConstraint!
-    private var headlineTopToIcon: NSLayoutConstraint!
+    private var advertiserTopToSeparator: NSLayoutConstraint!
+    private var advertiserTopToIcon: NSLayoutConstraint!
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -79,6 +80,13 @@ final class FlixrNativeAdView: NativeAdView {
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(iconImageView)
 
+        // Advertiser — required attribution; hidden when no advertiser data provided.
+        advertiserLabel.font = .systemFont(ofSize: 11, weight: .medium)
+        advertiserLabel.textColor = UIColor.white.withAlphaComponent(0.45)
+        advertiserLabel.isHidden = true
+        advertiserLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(advertiserLabel)
+
         // Headline — 2 lines (policy: no truncation < 25 chars)
         headlineLabel.font = .systemFont(ofSize: 20, weight: .heavy)
         headlineLabel.textColor = .white
@@ -110,15 +118,18 @@ final class FlixrNativeAdView: NativeAdView {
         // Register asset views — none of these overlap each other
         mediaView        = adMediaView
         iconView         = iconImageView
+        advertiserView   = advertiserLabel
         headlineView     = headlineLabel
         bodyView         = bodyLabel
         callToActionView = ctaButton
 
-        // Headline has two possible top anchors depending on whether an icon is shown
-        headlineTopToSeparator = headlineLabel.topAnchor.constraint(
-            equalTo: separator.bottomAnchor, constant: 14)
-        headlineTopToIcon = headlineLabel.topAnchor.constraint(
-            equalTo: iconImageView.bottomAnchor, constant: 8)
+        // Advertiser has two possible top anchors depending on whether an icon is shown.
+        // Headline always anchors below advertiserLabel; when advertiser is hidden its
+        // intrinsic height collapses to zero so the gap disappears automatically.
+        advertiserTopToSeparator = advertiserLabel.topAnchor.constraint(
+            equalTo: separator.bottomAnchor, constant: 12)
+        advertiserTopToIcon = advertiserLabel.topAnchor.constraint(
+            equalTo: iconImageView.bottomAnchor, constant: 4)
 
         NSLayoutConstraint.activate([
             // Media: top 58%
@@ -145,8 +156,13 @@ final class FlixrNativeAdView: NativeAdView {
             iconImageView.widthAnchor.constraint(equalToConstant: 36),
             iconImageView.heightAnchor.constraint(equalToConstant: 36),
 
-            // Headline — active top constraint set in populate()
-            headlineTopToSeparator,
+            // Advertiser — active top constraint set in populate()
+            advertiserTopToSeparator,
+            advertiserLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18),
+            advertiserLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
+
+            // Headline — always below advertiser (collapses when advertiser is hidden)
+            headlineLabel.topAnchor.constraint(equalTo: advertiserLabel.bottomAnchor, constant: 2),
             headlineLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18),
             headlineLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
 
@@ -169,20 +185,28 @@ final class FlixrNativeAdView: NativeAdView {
         self.nativeAd = nativeAd
 
         headlineLabel.text = nativeAd.headline
-        bodyLabel.text = nativeAd.body ?? nativeAd.advertiser
+        bodyLabel.text = nativeAd.body
         ctaButton.setTitle(nativeAd.callToAction ?? "Learn More", for: .normal)
         adMediaView.mediaContent = nativeAd.mediaContent
+
+        if let advertiser = nativeAd.advertiser, !advertiser.isEmpty {
+            advertiserLabel.text = advertiser
+            advertiserLabel.isHidden = false
+        } else {
+            advertiserLabel.text = nil
+            advertiserLabel.isHidden = true
+        }
 
         // Show icon for app install ads; hide for content ads
         if let icon = nativeAd.icon {
             iconImageView.image = icon.image
             iconImageView.isHidden = false
-            headlineTopToSeparator.isActive = false
-            headlineTopToIcon.isActive = true
+            advertiserTopToSeparator.isActive = false
+            advertiserTopToIcon.isActive = true
         } else {
             iconImageView.isHidden = true
-            headlineTopToIcon.isActive = false
-            headlineTopToSeparator.isActive = true
+            advertiserTopToIcon.isActive = false
+            advertiserTopToSeparator.isActive = true
         }
     }
 }

@@ -7,7 +7,10 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if !auth.isReady {
-                LoadingView(title: "Flixr", sub: "Finding your next watch…")
+                ZStack {
+                        Color.black.ignoresSafeArea()
+                        FlxLogo(size: 48)
+                    }
                     .transition(.opacity)
             } else if auth.isSigningOut {
                 LoadingView(title: "Signing out", sub: "See you next time.")
@@ -24,7 +27,11 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.35), value: auth.isSigningOut)
         .animation(.easeInOut(duration: 0.35), value: auth.user == nil)
         .task(id: auth.uid) {
-            if auth.uid != nil { await library.load() }
+            if let uid = auth.uid {
+                library.startListening(uid: uid)
+            } else {
+                library.stopListening()
+            }
         }
     }
 }
