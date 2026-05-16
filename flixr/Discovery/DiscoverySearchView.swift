@@ -6,13 +6,14 @@ import FirebaseAnalytics
 struct DiscoverySearchView: View {
     var onClose: () -> Void
     var onOpenDetail: (Movie) -> Void
+    var onBrowseGenre: ((String) -> Void)? = nil
 
     @State private var query = ""
     @State private var results: [Movie] = []
     @State private var isSearching = false
     @FocusState private var isSearchFocused: Bool
 
-    private let trending = ["Cozy thrillers", "Heist films", "Awards season", "Korean cinema", "Slow burns"]
+    private let trending = ["Christopher Nolan", "Parasite", "Denis Villeneuve", "Oppenheimer", "Greta Gerwig"]
 
     private var hasQuery: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -105,19 +106,24 @@ struct DiscoverySearchView: View {
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(genreTiles, id: \.name) { tile in
-                    Button(action: { query = tile.name }) {
-                        Text(tile.name)
-                            .font(.flxDisplay(18))
-                            .tracking(-0.1)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .frame(height: 64)
-                            .background(
-                                LinearGradient(colors: [tile.colorA, tile.colorB], startPoint: .topLeading, endPoint: .bottomTrailing)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    Button(action: {
+                        if let browse = onBrowseGenre {
+                            browse(tile.name)
+                        } else {
+                            query = tile.name
+                        }
+                    }) {
+                        ZStack(alignment: .bottomLeading) {
+                            LinearGradient(colors: [tile.colorA, tile.colorB], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            Text(tile.name)
+                                .font(.flxDisplay(18))
+                                .tracking(-0.1)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 12)
+                        }
+                        .frame(height: 64)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
             }
@@ -273,7 +279,7 @@ private struct SearchField: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 16))
                 .foregroundColor(Color.dFg3)
-            TextField("Search movies, cast, genres…", text: $text)
+            TextField("Search by title or person…", text: $text)
                 .font(.system(size: 15))
                 .foregroundColor(.white)
                 .tint(.flxRed)

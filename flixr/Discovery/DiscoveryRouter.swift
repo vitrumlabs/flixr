@@ -142,6 +142,10 @@ struct DiscoveryFlowView: View {
                     onOpenDetail: { movie in
                         Analytics.logMovieDetailViewed(movie)
                         withAnimation { searchMovie = movie }
+                    },
+                    onBrowseGenre: { genre in
+                        activeFilters = MovieFilters(genres: [genre], decade: nil, sortBy: "Popular", minRating: 0)
+                        withAnimation { activeTab = .discover }
                     }
                 )
             }
