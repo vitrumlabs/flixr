@@ -147,6 +147,6 @@ struct DiscoveryFlowView: View {
             }
         }
         .animation(.easeInOut(duration: 0.22), value: searchMovie?.id)
-        .toolbar(searchMovie != nil ? .hidden : .visible, for: .tabBar)
+        .toolbar(.hidden, for: .tabBar)
     }
 }
