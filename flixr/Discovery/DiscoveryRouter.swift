@@ -134,7 +134,7 @@ struct DiscoveryFlowView: View {
     @ViewBuilder
     private var searchTab: some View {
         if let movie = searchMovie {
-            MovieDetailView(movie: movie, onClose: { withAnimation { searchMovie = nil } })
+            MovieDetailView(movie: movie, onClose: { withAnimation { searchMovie = nil; searchQuery = "" } })
                 .id(movie.id)
                 .toolbar(.hidden, for: .tabBar)
         } else {
