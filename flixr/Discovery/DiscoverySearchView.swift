@@ -36,7 +36,7 @@ struct DiscoverySearchView: View {
                         .glassEffect(.regular.interactive(), in: Circle())
                         .accessibilityLabel("Close")
 
-                        SearchField(text: $query, isFocused: $isSearchFocused)
+                        SearchField(text: $query, isFocused: $isSearchFocused, isSearching: isSearching)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
@@ -78,21 +78,23 @@ struct DiscoverySearchView: View {
                 .padding(.top, 24)
                 .padding(.bottom, 12)
 
-            FlowLayout(spacing: 8, lineSpacing: 8) {
-                ForEach(trending, id: \.self) { t in
-                    Button(action: { query = t }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "bolt.fill")
-                                .font(.system(size: 11))
-                                .foregroundColor(.flxRed)
-                            Text(t)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
+            GlassEffectContainer(spacing: 0) {
+                FlowLayout(spacing: 8, lineSpacing: 8) {
+                    ForEach(trending, id: \.self) { t in
+                        Button(action: { query = t }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "bolt.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.flxRed)
+                                Text(t)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 14)
                         }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 14)
+                        .glassEffect(.regular.interactive(), in: .capsule)
                     }
-                    .glassEffect(.regular.interactive(), in: .capsule)
                 }
             }
             .padding(.horizontal, 20)
@@ -233,12 +235,15 @@ struct DiscoverySearchView: View {
 private struct SearchField: View {
     @Binding var text: String
     var isFocused: FocusState<Bool>.Binding
+    var isSearching: Bool = false
 
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 16))
                 .foregroundColor(Color.dFg3)
+                .symbolEffect(.bounce, value: isFocused.wrappedValue)
+                .symbolEffect(.pulse, isActive: isSearching)
             TextField("Search by title or person…", text: $text)
                 .font(.system(size: 15))
                 .foregroundColor(.white)
