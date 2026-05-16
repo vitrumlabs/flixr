@@ -20,12 +20,17 @@ final class DiscoverDeck {
         deckIndex = 0
         movies = []
         do {
-            let page1 = filters.isActive
-                ? try await MovieService.shared.discover(filters: filters, page: 1)
-                : try await MovieService.shared.fetchPopular(page: 1)
-            movies = Array(page1.prefix(10))
+            let batch: [Movie]
+            if filters.isActive {
+                batch = try await MovieService.shared.discover(filters: filters, page: 1)
+            } else {
+                // Random starting page so each session feels fresh
+                let page = Int.random(in: 1...8)
+                batch = try await MovieService.shared.fetchPopular(page: page)
+            }
+            movies = Array(batch.shuffled().prefix(10))
             isLoading = false
-            Task { await preloadTMDB(filters: filters, pages: 2...3) }
+            Task { await preloadTMDB(filters: filters, count: 2) }
         } catch {
             fetchError = true
             isLoading = false
@@ -42,28 +47,34 @@ final class DiscoverDeck {
         defer { isLoadingMore = false; isRefilling = false }
 
         let seenIds = Set(movies.map(\.id))
-        let nextPage = (movies.count / 20) + 1
         let more: [Movie]
         if filters.isActive {
+            let nextPage = (movies.count / 20) + 1
             more = (try? await MovieService.shared.discover(filters: filters, page: nextPage)) ?? []
+            movies.append(contentsOf: more.filter { !seenIds.contains($0.id) })
         } else {
-            more = (try? await MovieService.shared.fetchPopular(page: nextPage)) ?? []
+            // Random page each time — dedup via seenIds handles any overlap
+            let page = Int.random(in: 1...20)
+            more = (try? await MovieService.shared.fetchPopular(page: page)) ?? []
+            movies.append(contentsOf: more.shuffled().filter { !seenIds.contains($0.id) })
         }
-        movies.append(contentsOf: more.filter { !seenIds.contains($0.id) })
     }
 
     // MARK: - Silent background preload
 
-    private func preloadTMDB(filters: MovieFilters, pages: ClosedRange<Int>) async {
-        for page in pages {
+    private func preloadTMDB(filters: MovieFilters, count: Int) async {
+        for _ in 0..<count {
             let seenIds = Set(movies.map(\.id))
             let more: [Movie]
             if filters.isActive {
-                more = (try? await MovieService.shared.discover(filters: filters, page: page)) ?? []
+                let nextPage = (movies.count / 20) + 1
+                more = (try? await MovieService.shared.discover(filters: filters, page: nextPage)) ?? []
+                movies.append(contentsOf: more.filter { !seenIds.contains($0.id) })
             } else {
+                let page = Int.random(in: 1...20)
                 more = (try? await MovieService.shared.fetchPopular(page: page)) ?? []
+                movies.append(contentsOf: more.shuffled().filter { !seenIds.contains($0.id) })
             }
-            movies.append(contentsOf: more.filter { !seenIds.contains($0.id) })
         }
     }
 }
