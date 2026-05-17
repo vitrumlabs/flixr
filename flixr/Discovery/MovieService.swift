@@ -116,6 +116,12 @@ struct MovieService {
         return results.compactMap { Movie(tmdb: $0) }
     }
 
+    func moodSearch(query: String) async throws -> [Movie] {
+        let result = try await functions.httpsCallable("moodSearch").call(["query": query])
+        let items = result.data as? [[String: Any]] ?? []
+        return items.compactMap { Movie(moodResult: $0) }
+    }
+
     func discover(filters: MovieFilters, page: Int = 1) async throws -> [Movie] {
         var payload: [String: Any] = [
             "page": page,
@@ -131,6 +137,36 @@ struct MovieService {
         let root = result.data as? [String: Any] ?? [:]
         let results = root["results"] as? [[String: Any]] ?? []
         return results.compactMap { Movie(tmdb: $0) }
+    }
+}
+
+// MARK: - Movie ← mood search result (id + title + poster only)
+
+extension Movie {
+    init?(moodResult d: [String: Any]) {
+        guard let tmdbId = d["id"] as? Int,
+              let title = (d["title"] as? String)?.nilIfEmpty
+        else { return nil }
+        self.id          = String(tmdbId)
+        self.title       = title
+        self.year        = 0
+        self.runtime     = ""
+        self.genre       = "Film"
+        self.genres      = []
+        self.tag         = ""
+        self.rating      = 0
+        self.cert        = ""
+        self.releaseDate = ""
+        self.director    = ""
+        self.studio      = ""
+        self.language    = ""
+        self.cast        = []
+        self.platforms   = []
+        self.palette     = MoviePalette.forGenre("")
+        self.synopsis    = ""
+        self.posterPath  = d["poster"] as? String
+        self.backdropPath = nil
+        self.trailerKey  = nil
     }
 }
 

@@ -23,6 +23,7 @@ struct DiscoveryFlowView: View {
     @State private var discoverNav: DiscoverNav = .swipe
     @State private var discoverDeck = DiscoverDeck()
     @State private var watchlistNav: WatchlistNav = .list
+    @State private var moodMovie: Movie? = nil
     @State private var searchMovie: Movie? = nil
     @State private var searchQuery = ""
     @State private var showFilters = false
@@ -36,7 +37,8 @@ struct DiscoveryFlowView: View {
                     .toolbar(discoverNav != .swipe || showFilters ? .hidden : .visible, for: .tabBar)
             }
             Tab("Mood", systemImage: "theatermasks", value: DiscoverTab.mood) {
-                MoodPlaceholderView()
+                moodTab
+                    .toolbar(moodMovie != nil ? .hidden : .visible, for: .tabBar)
             }
             Tab("Watchlist", systemImage: "bookmark", value: DiscoverTab.watchlist) {
                 watchlistTab
@@ -68,6 +70,26 @@ struct DiscoveryFlowView: View {
                 withAnimation { discoverNav = .detail(movie) }
             }
         }
+    }
+
+    // MARK: Mood tab
+
+    @ViewBuilder
+    private var moodTab: some View {
+        ZStack {
+            MoodView(onOpenDetail: { movie in
+                Analytics.logMovieDetailViewed(movie)
+                withAnimation { moodMovie = movie }
+            })
+
+            if let movie = moodMovie {
+                MovieDetailView(movie: movie, onClose: {
+                    withAnimation { moodMovie = nil }
+                })
+                .id(movie.id)
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: moodMovie?.id)
     }
 
     // MARK: Discover tab
