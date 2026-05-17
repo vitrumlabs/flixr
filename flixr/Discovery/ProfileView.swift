@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseAuth
+import SafariServices
 
 // MARK: - Screen 23: Profile
 
@@ -10,6 +11,8 @@ struct ProfileView: View {
     @State private var showDeleteConfirmation = false
     @State private var isDeletingAccount = false
     @State private var deleteError: String? = nil
+    @State private var mailUnavailable = false
+    @State private var activeLegal: LegalDestination? = nil
 
     private var user: FirebaseAuth.User? { auth.user }
 
@@ -34,12 +37,17 @@ struct ProfileView: View {
         ("Skipped", library.skippedCount.formatted()),
     ]}
 
+    private var appVersion: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "Version \(v) (\(b))"
+    }
+
     private let settingRows: [(label: String, sub: String, icon: String)] = [
         ("Filters & Preferences", "Genres, mood, decade",  "slider.horizontal.3"),
         ("Streaming services",    "Choose your platforms", "play.tv"),
         ("Subscription",          "Manage your plan",      "star"),
         ("Notifications",         "New matches · Trailers","bell"),
-        ("Help & feedback",       "Get in touch",          "questionmark.circle"),
     ]
 
     var body: some View {
@@ -175,50 +183,23 @@ struct ProfileView: View {
                     .padding(.bottom, 18)
 
                     // Settings rows
-                    VStack(spacing: 0) {
-                        ForEach(Array(settingRows.enumerated()), id: \.element.label) { i, row in
-                            Button(action: {}) {
-                                HStack(spacing: 14) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.flxRed.opacity(0.12))
-                                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.flxRed.opacity(0.25), lineWidth: 1))
-                                        Image(systemName: row.icon)
-                                            .font(.system(size: 15))
-                                            .foregroundColor(.flxRed)
-                                    }
-                                    .frame(width: 36, height: 36)
+                    ProfileRowGroup(rows: settingRows, action: { _ in })
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
 
-                                    VStack(alignment: .leading, spacing: 1) {
-                                        Text(row.label)
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.white)
-                                        Text(row.sub)
-                                            .font(.system(size: 12))
-                                            .foregroundColor(Color.dFg3)
-                                    }
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(Color.dFg3)
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 14)
-                            }
-                            .buttonStyle(.plain)
-
-                            if i < settingRows.count - 1 {
-                                Divider()
-                                    .background(Color.dLine)
-                                    .padding(.leading, 64)
-                            }
+                    // Support & legal
+                    ProfileRowGroup(rows: [
+                        ("Help & feedback", "Get in touch",          "questionmark.circle"),
+                        ("Terms of Use",    "Read our terms",        "doc.text"),
+                        ("Privacy Policy",  "How we use your data",  "lock.shield"),
+                    ]) { label in
+                        switch label {
+                        case "Help & feedback": openMail()
+                        case "Terms of Use":    activeLegal = .terms
+                        case "Privacy Policy":  activeLegal = .privacy
+                        default: break
                         }
                     }
-                    .background(Color.white.opacity(0.04))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
 
@@ -250,11 +231,22 @@ struct ProfileView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 110)
+                    .padding(.bottom, 16)
+
+                    // Version
+                    Text(appVersion)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.dFg3.opacity(0.45))
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, 110)
                 }
             }
         }
         .preferredColorScheme(.dark)
+        .sheet(item: $activeLegal) { dest in
+            SafariView(url: dest.url)
+                .ignoresSafeArea()
+        }
         .confirmationDialog(
             "Delete Account",
             isPresented: $showDeleteConfirmation,
@@ -283,8 +275,107 @@ struct ProfileView: View {
         } message: {
             Text(deleteError ?? "")
         }
+        .alert("Mail Not Available", isPresented: $mailUnavailable) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Please reach us directly at info@vitrumlabs.com")
+        }
     }
 
+    private func openMail() {
+        let subject = "Flixr Help & Feedback"
+        let encoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject
+        guard let url = URL(string: "mailto:info@vitrumlabs.com?subject=\(encoded)") else { return }
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+        } else {
+            mailUnavailable = true
+        }
+    }
+}
+
+// MARK: - Legal destination
+
+private enum LegalDestination: String, Identifiable {
+    case terms, privacy
+
+    var id: String { rawValue }
+
+    var url: URL {
+        switch self {
+        case .terms:   return URL(string: "https://vitrumlabs.com/terms")!
+        case .privacy: return URL(string: "https://vitrumlabs.com/privacy")!
+        }
+    }
+}
+
+// MARK: - Safari sheet
+
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let vc = SFSafariViewController(url: url)
+        vc.preferredBarTintColor = UIColor(Color(hex: "14070a"))
+        vc.preferredControlTintColor = UIColor(Color.flxRed)
+        return vc
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+}
+
+// MARK: - Reusable row group
+
+private struct ProfileRowGroup: View {
+    let rows: [(label: String, sub: String, icon: String)]
+    let action: (String) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.element.label) { i, row in
+                Button(action: { action(row.label) }) {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.flxRed.opacity(0.12))
+                                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.flxRed.opacity(0.25), lineWidth: 1))
+                            Image(systemName: row.icon)
+                                .font(.system(size: 15))
+                                .foregroundColor(.flxRed)
+                        }
+                        .frame(width: 36, height: 36)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(row.label)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.white)
+                            Text(row.sub)
+                                .font(.system(size: 12))
+                                .foregroundColor(Color.dFg3)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.dFg3)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.plain)
+
+                if i < rows.count - 1 {
+                    Divider()
+                        .background(Color.dLine)
+                        .padding(.leading, 64)
+                }
+            }
+        }
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
+    }
 }
 
 // MARK: - Genre chips (wrapping flow layout)
