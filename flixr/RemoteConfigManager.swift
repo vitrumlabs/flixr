@@ -5,11 +5,8 @@ import Observation
 final class RemoteConfigManager {
     static let shared = RemoteConfigManager()
 
-    // Test ad unit ID is the safe default — production ID is pushed via Remote Config
-    static let defaultAdUnitID = "ca-app-pub-3940256099942544/3986624511"
-
-    // Exposed values — updated after every successful fetch
-    private(set) var adUnitID:    String = RemoteConfigManager.defaultAdUnitID
+    // Empty until a real unit ID is pushed via Remote Config — ads simply won't load
+    private(set) var adUnitID:    String = ""
     private(set) var swipesPerAd: Int    = 8
     private(set) var adsEnabled:  Bool   = true
 
@@ -24,7 +21,7 @@ final class RemoteConfigManager {
         #endif
         rc.configSettings = settings
         rc.setDefaults([
-            "ad_unit_id":    RemoteConfigManager.defaultAdUnitID as NSObject,
+            "ad_unit_id":    "" as NSObject,
             "swipes_per_ad": 8 as NSObject,
             "ads_enabled":   true as NSObject,
         ])
@@ -32,8 +29,7 @@ final class RemoteConfigManager {
 
     func fetchAndActivate() async {
         _ = try? await rc.fetchAndActivate()
-        let unitID = rc["ad_unit_id"].stringValue
-        adUnitID    = unitID.isEmpty ? RemoteConfigManager.defaultAdUnitID : unitID
+        adUnitID    = rc["ad_unit_id"].stringValue
         swipesPerAd = max(1, rc["swipes_per_ad"].numberValue.intValue)
         adsEnabled  = rc["ads_enabled"].boolValue
     }
