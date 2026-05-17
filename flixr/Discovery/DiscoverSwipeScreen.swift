@@ -80,14 +80,11 @@ struct DiscoverSwipeScreen: View {
                                 onLike: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        Task { await library.like(movie) }
+                                        Task { await library.addToWatchlist(movie) }
                                     }
                                 },
                                 onSkip: { item in
                                     advance()
-                                    if case .movie(let movie) = item {
-                                        Task { await library.skip(movie) }
-                                    }
                                 },
                                 onTap: { onOpenDetail($0) }
                             )

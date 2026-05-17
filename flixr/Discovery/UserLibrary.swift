@@ -78,21 +78,18 @@ struct NotificationPrefs {
 
 @Observable
 final class UserLibrary {
-    private(set) var watchlist:     [MovieSnapshot]  = []
-    private(set) var liked:         [MovieSnapshot]  = []
-    private(set) var isFlixrPlus:   Bool             = false
-    private(set) var skippedCount:  Int              = 0
-    private(set) var notifPrefs:    NotificationPrefs = .init()
+    private(set) var watchlist:   [MovieSnapshot]   = []
+    private(set) var isFlixrPlus: Bool              = false
+    private(set) var notifPrefs:  NotificationPrefs = .init()
 
     var topGenres: [String] {
         var counts: [String: Int] = [:]
-        for snap in liked {
+        for snap in watchlist {
             for g in snap.genres { counts[g, default: 0] += 1 }
         }
         return counts.sorted { $0.value > $1.value }.prefix(6).map(\.key)
     }
 
-    var likedIds:     Set<String> { Set(liked.map(\.id)) }
     var watchlistIds: Set<String> { Set(watchlist.map(\.id)) }
 
     private let db = Firestore.firestore()
@@ -111,11 +108,7 @@ final class UserLibrary {
             if let raw = data["watchlist"] as? [[String: Any]] {
                 self.watchlist = raw.compactMap { MovieSnapshot($0) }
             }
-            if let raw = data["liked"] as? [[String: Any]] {
-                self.liked = raw.compactMap { MovieSnapshot($0) }
-            }
-            self.skippedCount = (data["skipped"] as? [Any])?.count ?? 0
-            self.isFlixrPlus  = data["isFlixrPlus"] as? Bool ?? false
+            self.isFlixrPlus = data["isFlixrPlus"] as? Bool ?? false
             if let p = data["notificationPrefs"] as? [String: Any] {
                 self.notifPrefs = NotificationPrefs(
                     newRecommendations: p["newRecommendations"] as? Bool ?? true,
@@ -129,11 +122,9 @@ final class UserLibrary {
     func stopListening() {
         listener?.remove()
         listener = nil
-        watchlist    = []
-        liked        = []
-        isFlixrPlus  = false
-        skippedCount = 0
-        notifPrefs   = .init()
+        watchlist   = []
+        isFlixrPlus = false
+        notifPrefs  = .init()
     }
 
     func saveNotifPrefs(_ prefs: NotificationPrefs) async {
@@ -148,38 +139,6 @@ final class UserLibrary {
         ], merge: true)
     }
 
-    // MARK: - Like
-    // Optimistic local update for immediate UI response; listener reconciles from Firestore.
-
-    func like(_ movie: Movie) async {
-        guard let uid, !likedIds.contains(movie.id) else { return }
-        let snap = movie.snapshot()
-        liked.append(snap)
-        try? await db.collection("users").document(uid).updateData([
-            "liked": FieldValue.arrayUnion([snap.toFirestore()])
-        ])
-        Analytics.logMovieLiked(movie)
-    }
-
-    func unlike(_ movie: Movie) async {
-        guard let uid, let snap = liked.first(where: { $0.id == movie.id }) else { return }
-        liked.removeAll { $0.id == movie.id }
-        try? await db.collection("users").document(uid).updateData([
-            "liked": FieldValue.arrayRemove([snap.toFirestore()])
-        ])
-    }
-
-    // MARK: - Skip
-
-    func skip(_ movie: Movie) async {
-        guard let uid else { return }
-        let tmdbId = Int(movie.id) ?? 0
-        try? await db.collection("users").document(uid).updateData([
-            "skipped": FieldValue.arrayUnion([tmdbId])
-        ])
-        Analytics.logMovieSkipped(movie)
-    }
-
     // MARK: - Watchlist
 
     func addToWatchlist(_ movie: Movie) async {
@@ -190,6 +149,12 @@ final class UserLibrary {
             "watchlist": FieldValue.arrayUnion([snap.toFirestore()])
         ])
         Analytics.logWatchlistAdd(movie)
+    }
+
+    func clearWatchlist() async {
+        guard let uid else { return }
+        watchlist = []
+        try? await db.collection("users").document(uid).updateData(["watchlist": []])
     }
 
     func removeFromWatchlist(_ movie: Movie) async {

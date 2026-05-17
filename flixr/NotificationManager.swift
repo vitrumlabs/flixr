@@ -10,10 +10,9 @@ final class NotificationManager: NSObject {
     static let shared = NotificationManager()
 
     private(set) var systemGranted: Bool = false
+    private(set) var pendingMovieID: Int? = nil
 
     private let db = Firestore.firestore()
-    private var apnsReady = false
-    private var pendingUID: String?
     private var authListener: AuthStateDidChangeListenerHandle?
 
     private override init() {
@@ -21,22 +20,20 @@ final class NotificationManager: NSObject {
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
 
+        // Always attempt to save the token when auth state is known.
+        // On re-launches the FCM token is cached so this succeeds without
+        // waiting for the APNs round-trip.
         authListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             guard let self, let uid = user?.uid else { return }
-            if self.apnsReady {
-                Task { await self.fetchAndSaveToken(for: uid) }
-            } else {
-                self.pendingUID = uid
-            }
+            Task { await self.fetchAndSaveToken(for: uid) }
         }
     }
 
-    // Called by AppDelegate after Messaging.messaging().apnsToken is set
+    // Called by AppDelegate after Messaging.messaging().apnsToken is set.
+    // Handles first-ever token generation where the cached token isn't
+    // available yet when the auth listener fires.
     func apnsTokenDidArrive() {
-        apnsReady = true
-        let uid = pendingUID ?? Auth.auth().currentUser?.uid
-        guard let uid else { return }
-        pendingUID = nil
+        guard let uid = Auth.auth().currentUser?.uid else { return }
         Task { await fetchAndSaveToken(for: uid) }
     }
 
@@ -57,6 +54,10 @@ final class NotificationManager: NSObject {
         }
     }
 
+    func consumePendingMovieID() {
+        pendingMovieID = nil
+    }
+
     func fetchAndSaveToken(for uid: String) async {
         do {
             let token = try await Messaging.messaging().token()
@@ -73,6 +74,18 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         [.banner, .sound, .badge]
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let info = response.notification.request.content.userInfo
+        if let idStr = info["movieId"] as? String, let id = Int(idStr), id > 0 {
+            pendingMovieID = id
+        }
+        completionHandler()
     }
 }
 

@@ -33,9 +33,7 @@ struct ProfileView: View {
     }
 
     private var stats: [(String, String)] {[
-        ("Swiped",  (library.liked.count + library.skippedCount).formatted()),
-        ("Liked",   library.liked.count.formatted()),
-        ("Skipped", library.skippedCount.formatted()),
+        ("Saved", library.watchlist.count.formatted()),
     ]}
 
     private var appVersion: String {
@@ -45,7 +43,7 @@ struct ProfileView: View {
     }
 
     private let settingRows: [(label: String, sub: String, icon: String)] = [
-        ("Notifications", "New matches · Trailers", "bell"),
+        ("Notifications", "Recommendations · Reminders", "bell"),
     ]
 
     var body: some View {
@@ -204,38 +202,21 @@ struct ProfileView: View {
                     .padding(.bottom, 12)
 
                     // Sign out
-                    Button(action: { auth.signOut() }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .font(.system(size: 15, weight: .semibold))
-                            Text("Sign Out")
-                                .font(.system(size: 15, weight: .semibold))
-                        }
-                        .foregroundColor(Color.dFg3)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 15)
-                        .background(Color.white.opacity(0.04))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
+                    ProfileRowGroup(
+                        rows: [("Sign Out", "See you next time", "rectangle.portrait.and.arrow.right")],
+                        action: { _ in auth.signOut() },
+                        showChevron: false
+                    )
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 10)
+                    .padding(.bottom, 12)
 
                     // Delete account
-                    Button(action: { showDeleteConfirmation = true }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 12, weight: .medium))
-                            Text(isDeletingAccount ? "Deleting…" : "Delete Account")
-                                .font(.system(size: 13, weight: .medium))
-                        }
-                        .foregroundColor(.red.opacity(0.7))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isDeletingAccount)
+                    ProfileRowGroup(
+                        rows: [(isDeletingAccount ? "Deleting…" : "Delete Account", "Permanently removes all data", "person.crop.circle.badge.minus")],
+                        action: { _ in if !isDeletingAccount { showDeleteConfirmation = true } },
+                        showChevron: false,
+                        isDestructive: true
+                    )
                     .padding(.horizontal, 20)
                     .padding(.bottom, 10)
 
@@ -338,6 +319,10 @@ private struct SafariView: UIViewControllerRepresentable {
 private struct ProfileRowGroup: View {
     let rows: [(label: String, sub: String, icon: String)]
     let action: (String) -> Void
+    var showChevron: Bool = true
+    var isDestructive: Bool = false
+
+    private var accent: Color { isDestructive ? .red : .flxRed }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -346,18 +331,18 @@ private struct ProfileRowGroup: View {
                     HStack(spacing: 14) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.flxRed.opacity(0.12))
-                                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.flxRed.opacity(0.25), lineWidth: 1))
+                                .fill(accent.opacity(0.12))
+                                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(accent.opacity(0.25), lineWidth: 1))
                             Image(systemName: row.icon)
                                 .font(.system(size: 15))
-                                .foregroundColor(.flxRed)
+                                .foregroundColor(accent)
                         }
                         .frame(width: 36, height: 36)
 
                         VStack(alignment: .leading, spacing: 1) {
                             Text(row.label)
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.white)
+                                .foregroundColor(isDestructive ? .red : .white)
                             Text(row.sub)
                                 .font(.system(size: 12))
                                 .foregroundColor(Color.dFg3)
@@ -365,9 +350,11 @@ private struct ProfileRowGroup: View {
 
                         Spacer()
 
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color.dFg3)
+                        if showChevron {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color.dFg3)
+                        }
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 14)

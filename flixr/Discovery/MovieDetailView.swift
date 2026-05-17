@@ -6,7 +6,6 @@ struct MovieDetailView: View {
     var movie: Movie
     var onClose: () -> Void
 
-    @Environment(UserLibrary.self) private var library
     @Environment(\.openURL) private var openURL
     @State private var detail: Movie? = nil
     @State private var isFetching = false

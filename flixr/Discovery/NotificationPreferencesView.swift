@@ -4,6 +4,7 @@ struct NotificationPreferencesView: View {
     @Environment(UserLibrary.self) private var library
     @Environment(NotificationManager.self) private var notifManager
     @Environment(\.openURL) private var openURL
+    @Environment(\.dismiss) private var dismiss
 
     @State private var prefs: NotificationPrefs = .init()
 
@@ -79,6 +80,17 @@ struct NotificationPreferencesView: View {
                     .padding(.horizontal, 20)
                 }
             }
+        }
+        .overlay(alignment: .topLeading) {
+            Button(action: { dismiss() }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+            }
+            .glassEffect(.regular.interactive(), in: .circle)
+            .padding(.top, 20)
+            .padding(.leading, 16)
         }
         .preferredColorScheme(.dark)
         .onAppear {

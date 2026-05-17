@@ -7,16 +7,14 @@ struct WatchlistView: View {
 
     @Environment(UserLibrary.self) private var library
     @State private var sortOrder = SortOrder.recentlyAdded
+    @State private var showClearConfirm = false
 
     private enum SortOrder: String, CaseIterable {
         case recentlyAdded = "Recently Added"
         case highestRated  = "Highest Rated"
     }
 
-    private var allSaved: [MovieSnapshot] {
-        var seen = Set<String>()
-        return (library.watchlist + library.liked).filter { seen.insert($0.id).inserted }
-    }
+    private var allSaved: [MovieSnapshot] { library.watchlist }
 
     private var movieList: [Movie] {
         let sorted = sortOrder == .highestRated
@@ -52,6 +50,14 @@ struct WatchlistView: View {
                                 Text(order.rawValue).tag(order)
                             }
                         }
+                        if !allSaved.isEmpty {
+                            Divider()
+                            Button(role: .destructive) {
+                                showClearConfirm = true
+                            } label: {
+                                Label("Clear Watchlist", systemImage: "trash")
+                            }
+                        }
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                             .font(.system(size: 22))
@@ -75,7 +81,6 @@ struct WatchlistView: View {
                                 } onRemove: {
                                     Task {
                                         await library.removeFromWatchlist(movie)
-                                        await library.unlike(movie)
                                     }
                                 }
                             }
@@ -88,6 +93,18 @@ struct WatchlistView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .confirmationDialog(
+            "Clear Watchlist",
+            isPresented: $showClearConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Clear All", role: .destructive) {
+                Task { await library.clearWatchlist() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will remove all \(allSaved.count) title\(allSaved.count == 1 ? "" : "s") from your watchlist.")
+        }
     }
 
     private var emptyState: some View {

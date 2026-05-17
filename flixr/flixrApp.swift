@@ -10,8 +10,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        // Initialise NotificationManager early so its Messaging delegate
-        // is set before Firebase fires didReceiveRegistrationToken
         _ = NotificationManager.shared
         application.registerForRemoteNotifications()
         return true
