@@ -12,11 +12,19 @@ final class NotificationManager: NSObject {
     private(set) var systemGranted: Bool = false
 
     private let db = Firestore.firestore()
+    private var cachedToken: String?
+    private var authListener: AuthStateDidChangeListenerHandle?
 
     private override init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
+
+        // Flush the cached token whenever a user signs in
+        authListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            guard let self, let uid = user?.uid, let token = self.cachedToken else { return }
+            self.saveToken(token, for: uid)
+        }
     }
 
     func checkPermission() async {
@@ -52,8 +60,12 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
 
 extension NotificationManager: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        guard let token = fcmToken,
-              let uid = Auth.auth().currentUser?.uid else { return }
-        saveToken(token, for: uid)
+        guard let token = fcmToken else { return }
+        cachedToken = token
+        // Save immediately if user is already signed in, otherwise the
+        // auth state listener above will flush it once sign-in completes
+        if let uid = Auth.auth().currentUser?.uid {
+            saveToken(token, for: uid)
+        }
     }
 }
