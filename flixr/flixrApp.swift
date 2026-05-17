@@ -19,7 +19,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        print("[APNs] Device token received: \(deviceToken.map { String(format: "%02x", $0) }.joined())")
         Messaging.messaging().apnsToken = deviceToken
+        NotificationManager.shared.apnsTokenDidArrive()
+    }
+
+    func application(_ application: UIApplication,
+                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("[APNs] Registration failed: \(error.localizedDescription)")
     }
 }
 

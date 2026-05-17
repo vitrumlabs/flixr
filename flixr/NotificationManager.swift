@@ -12,6 +12,8 @@ final class NotificationManager: NSObject {
     private(set) var systemGranted: Bool = false
 
     private let db = Firestore.firestore()
+    private var apnsReady = false
+    private var pendingUID: String?
     private var authListener: AuthStateDidChangeListenerHandle?
 
     private override init() {
@@ -19,11 +21,23 @@ final class NotificationManager: NSObject {
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
 
-        // Fetch and save the FCM token whenever a user signs in
         authListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            guard let uid = user?.uid else { return }
-            Task { await self?.fetchAndSaveToken(for: uid) }
+            guard let self, let uid = user?.uid else { return }
+            if self.apnsReady {
+                Task { await self.fetchAndSaveToken(for: uid) }
+            } else {
+                self.pendingUID = uid
+            }
         }
+    }
+
+    // Called by AppDelegate after Messaging.messaging().apnsToken is set
+    func apnsTokenDidArrive() {
+        apnsReady = true
+        let uid = pendingUID ?? Auth.auth().currentUser?.uid
+        guard let uid else { return }
+        pendingUID = nil
+        Task { await fetchAndSaveToken(for: uid) }
     }
 
     func checkPermission() async {
@@ -63,9 +77,9 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
 }
 
 extension NotificationManager: MessagingDelegate {
+    // Fired when the token refreshes — save the new token immediately
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        guard let token = fcmToken,
-              let uid = Auth.auth().currentUser?.uid else { return }
+        guard let token = fcmToken, let uid = Auth.auth().currentUser?.uid else { return }
         Task { try? await self.db.collection("users").document(uid).setData(["fcmToken": token], merge: true) }
     }
 }
