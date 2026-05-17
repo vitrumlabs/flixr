@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseAuth
+import SafariServices
 
 // MARK: - Screen 23: Profile
 
@@ -7,9 +8,10 @@ struct ProfileView: View {
     @Environment(AuthManager.self) private var auth
     @Environment(UserLibrary.self) private var library
 
-    @State private var showDeleteConfirmation = false
-    @State private var isDeletingAccount = false
-    @State private var deleteError: String? = nil
+    @State private var mailUnavailable = false
+    @State private var activeLegal: LegalDestination? = nil
+    @State private var showNotifPrefs = false
+    @State private var showDeleteAccount = false
 
     private var user: FirebaseAuth.User? { auth.user }
 
@@ -28,18 +30,14 @@ struct ProfileView: View {
         return "Member since \(Calendar.current.component(.year, from: date))"
     }
 
-    private var stats: [(String, String)] {[
-        ("Swiped",  (library.liked.count + library.skippedCount).formatted()),
-        ("Liked",   library.liked.count.formatted()),
-        ("Skipped", library.skippedCount.formatted()),
-    ]}
+    private var appVersion: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "Version \(v) (\(b))"
+    }
 
     private let settingRows: [(label: String, sub: String, icon: String)] = [
-        ("Filters & Preferences", "Genres, mood, decade",  "slider.horizontal.3"),
-        ("Streaming services",    "Choose your platforms", "play.tv"),
-        ("Subscription",          "Manage your plan",      "star"),
-        ("Notifications",         "New matches · Trailers","bell"),
-        ("Help & feedback",       "Get in touch",          "questionmark.circle"),
+        ("Notifications", "Recommendations · Reminders", "bell"),
     ]
 
     var body: some View {
@@ -126,29 +124,6 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 18)
 
-                    // Stats grid
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                        ForEach(stats, id: \.0) { stat in
-                            VStack(spacing: 2) {
-                                Text(stat.1)
-                                    .font(.flxDisplay(22))
-                                    .foregroundColor(.white)
-                                Text(stat.0)
-                                    .font(.system(size: 11, weight: .bold))
-                                    .tracking(0.8)
-                                    .textCase(.uppercase)
-                                    .foregroundColor(Color.dFg3)
-                            }
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                            .background(Color.white.opacity(0.04))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.dLine, lineWidth: 1))
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 18)
-
                     // Taste card
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Your taste")
@@ -175,116 +150,321 @@ struct ProfileView: View {
                     .padding(.bottom, 18)
 
                     // Settings rows
-                    VStack(spacing: 0) {
-                        ForEach(Array(settingRows.enumerated()), id: \.element.label) { i, row in
-                            Button(action: {}) {
-                                HStack(spacing: 14) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.flxRed.opacity(0.12))
-                                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.flxRed.opacity(0.25), lineWidth: 1))
-                                        Image(systemName: row.icon)
-                                            .font(.system(size: 15))
-                                            .foregroundColor(.flxRed)
-                                    }
-                                    .frame(width: 36, height: 36)
+                    ProfileRowGroup(rows: settingRows) { label in
+                        if label == "Notifications" { showNotifPrefs = true }
+                    }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
 
-                                    VStack(alignment: .leading, spacing: 1) {
-                                        Text(row.label)
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.white)
-                                        Text(row.sub)
-                                            .font(.system(size: 12))
-                                            .foregroundColor(Color.dFg3)
-                                    }
-
-                                    Spacer()
-
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(Color.dFg3)
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 14)
-                            }
-                            .buttonStyle(.plain)
-
-                            if i < settingRows.count - 1 {
-                                Divider()
-                                    .background(Color.dLine)
-                                    .padding(.leading, 64)
-                            }
+                    // Support & legal
+                    ProfileRowGroup(rows: [
+                        ("Help & feedback", "Get in touch",          "questionmark.circle"),
+                        ("Terms of Use",    "Read our terms",        "doc.text"),
+                        ("Privacy Policy",  "How we use your data",  "lock.shield"),
+                    ]) { label in
+                        switch label {
+                        case "Help & feedback": openMail()
+                        case "Terms of Use":    activeLegal = .terms
+                        case "Privacy Policy":  activeLegal = .privacy
+                        default: break
                         }
                     }
-                    .background(Color.white.opacity(0.04))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
 
-                    // Sign out / Delete account
-                    VStack(spacing: 0) {
-                        Button(action: { auth.signOut() }) {
-                            Text("Sign out")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color.dFg3)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                        }
-                        .buttonStyle(.plain)
-
-                        Divider()
-                            .background(Color.dLine)
-
-                        Button(action: { showDeleteConfirmation = true }) {
-                            Text(isDeletingAccount ? "Deleting…" : "Delete Account")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.red)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isDeletingAccount)
-                    }
-                    .background(Color.white.opacity(0.04))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
+                    // Delete account
+                    ProfileRowGroup(
+                        rows: [("Delete Account", "Permanently removes all data", "person.crop.circle.badge.minus")],
+                        action: { _ in showDeleteAccount = true },
+                        isDestructive: true
+                    )
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 110)
-                }
-            }
-        }
-        .preferredColorScheme(.dark)
-        .confirmationDialog(
-            "Delete Account",
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Account and All Data", role: .destructive) {
-                isDeletingAccount = true
-                Task {
-                    do {
-                        try await auth.deleteAccount()
-                    } catch {
-                        deleteError = "Couldn't delete your account. Please sign out and sign back in, then try again."
+                    .padding(.bottom, 24)
+
+                    // Sign out — minimal, below everything else
+                    Button(action: { auth.signOut() }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 14))
+                            Text("Sign Out")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(Color.dFg3)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .contentShape(Rectangle())
                     }
-                    isDeletingAccount = false
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+
+                    // Version
+                    Text(appVersion)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.dFg3.opacity(0.45))
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, 110)
                 }
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will permanently delete your account, watchlist, and all activity. This cannot be undone.")
         }
-        .alert("Deletion Failed", isPresented: Binding(
-            get: { deleteError != nil },
-            set: { if !$0 { deleteError = nil } }
-        )) {
+        .presentationDragIndicator(.visible)
+        .preferredColorScheme(.dark)
+        .sheet(isPresented: $showNotifPrefs) {
+            NotificationPreferencesView()
+        }
+        .sheet(isPresented: $showDeleteAccount) {
+            DeleteAccountView()
+        }
+        .sheet(item: $activeLegal) { dest in
+            SafariView(url: dest.url)
+                .ignoresSafeArea()
+        }
+        .alert("Mail Not Available", isPresented: $mailUnavailable) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(deleteError ?? "")
+            Text("Please reach us directly at info@vitrumlabs.com")
         }
     }
 
+    private func openMail() {
+        let subject = "Flixr Help & Feedback"
+        let encoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? subject
+        guard let url = URL(string: "mailto:info@vitrumlabs.com?subject=\(encoded)") else { return }
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+        } else {
+            mailUnavailable = true
+        }
+    }
+}
+
+// MARK: - Delete Account screen
+
+private struct DeleteAccountView: View {
+    @Environment(AuthManager.self) private var auth
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var isDeleting = false
+    @State private var deleteError: String? = nil
+
+    private let consequences: [(String, String)] = [
+        ("Your profile and login",          "person.crop.circle"),
+        ("Your watchlist and saved films",   "bookmark"),
+        ("Your taste profile",              "sparkles"),
+        ("All preferences and activity",    "chart.bar"),
+    ]
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [Color(hex: "14070a"), .black],
+                center: UnitPoint(x: 0.5, y: 0),
+                startRadius: 0, endRadius: 500
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                    }
+                    .glassEffect(.regular.interactive(), in: .circle)
+                    .padding(.leading, 16)
+                    Spacer()
+                }
+                .padding(.top, 14)
+                .padding(.bottom, 4)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.red.opacity(0.1))
+                                .overlay(Circle().strokeBorder(Color.red.opacity(0.3), lineWidth: 1.5))
+                            Image(systemName: "person.crop.circle.badge.minus")
+                                .font(.system(size: 36))
+                                .foregroundColor(.red)
+                        }
+                        .frame(width: 88, height: 88)
+                        .padding(.top, 28)
+                        .padding(.bottom, 20)
+
+                        Text("Delete Account")
+                            .font(.flxDisplay(28))
+                            .foregroundColor(.white)
+                            .padding(.bottom, 10)
+
+                        Text("This permanently deletes your account and all data. There is no going back.")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color.dFg3)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 36)
+                            .padding(.bottom, 32)
+
+                        VStack(spacing: 0) {
+                            ForEach(Array(consequences.enumerated()), id: \.element.0) { i, item in
+                                HStack(spacing: 14) {
+                                    Image(systemName: item.1)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.red.opacity(0.65))
+                                        .frame(width: 20)
+                                    Text(item.0)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color.dFg2)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                if i < consequences.count - 1 {
+                                    Divider().background(Color.dLine).padding(.leading, 50)
+                                }
+                            }
+                        }
+                        .background(Color.white.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 28)
+
+                        if let error = deleteError {
+                            Text(error)
+                                .font(.system(size: 13))
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 16)
+                        }
+
+                        Button(action: {
+                            isDeleting = true
+                            Task {
+                                do {
+                                    try await auth.deleteAccount()
+                                } catch {
+                                    deleteError = "Couldn't delete your account. Please sign out and sign back in, then try again."
+                                    isDeleting = false
+                                }
+                            }
+                        }) {
+                            HStack(spacing: 10) {
+                                if isDeleting {
+                                    ProgressView().tint(.white).scaleEffect(0.85)
+                                }
+                                Text(isDeleting ? "Deleting…" : "Delete My Account")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(isDeleting ? Color.red.opacity(0.5) : Color.red)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isDeleting)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 110)
+                    }
+                }
+            }
+        }
+        .presentationDragIndicator(.visible)
+        .preferredColorScheme(.dark)
+    }
+}
+
+// MARK: - Legal destination
+
+private enum LegalDestination: String, Identifiable {
+    case terms, privacy
+
+    var id: String { rawValue }
+
+    var url: URL {
+        switch self {
+        case .terms:   return URL(string: "https://vitrumlabs.com/terms")!
+        case .privacy: return URL(string: "https://vitrumlabs.com/privacy")!
+        }
+    }
+}
+
+// MARK: - Safari sheet
+
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let vc = SFSafariViewController(url: url)
+        vc.preferredBarTintColor = UIColor(Color(hex: "14070a"))
+        vc.preferredControlTintColor = UIColor(Color.flxRed)
+        return vc
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+}
+
+// MARK: - Reusable row group
+
+private struct ProfileRowGroup: View {
+    let rows: [(label: String, sub: String, icon: String)]
+    let action: (String) -> Void
+    var showChevron: Bool = true
+    var isDestructive: Bool = false
+
+    private var accent: Color { isDestructive ? .red : .flxRed }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.element.label) { i, row in
+                Button(action: { action(row.label) }) {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(accent.opacity(0.12))
+                                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(accent.opacity(0.25), lineWidth: 1))
+                            Image(systemName: row.icon)
+                                .font(.system(size: 15))
+                                .foregroundColor(accent)
+                        }
+                        .frame(width: 36, height: 36)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(row.label)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(isDestructive ? .red : .white)
+                            Text(row.sub)
+                                .font(.system(size: 12))
+                                .foregroundColor(Color.dFg3)
+                        }
+
+                        Spacer()
+
+                        if showChevron {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color.dFg3)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 14)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if i < rows.count - 1 {
+                    Divider()
+                        .background(Color.dLine)
+                        .padding(.leading, 64)
+                }
+            }
+        }
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
+    }
 }
 
 // MARK: - Genre chips (wrapping flow layout)

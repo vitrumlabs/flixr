@@ -16,6 +16,8 @@ private enum WatchlistNav: Equatable {
 // MARK: - Root flow
 
 struct DiscoveryFlowView: View {
+    @Environment(NotificationManager.self) private var notifManager
+
     @State private var activeTab: DiscoverTab = .discover
     @State private var discoverNav: DiscoverNav = .swipe
     @State private var discoverDeck = DiscoverDeck()
@@ -47,6 +49,15 @@ struct DiscoveryFlowView: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showProfile) {
             ProfileView()
+        }
+        .onChange(of: notifManager.pendingMovieID) { _, movieID in
+            guard let movieID else { return }
+            notifManager.consumePendingMovieID()
+            activeTab = .discover
+            Task {
+                guard let movie = try? await MovieService.shared.fetchDetails(id: movieID) else { return }
+                withAnimation { discoverNav = .detail(movie) }
+            }
         }
     }
 

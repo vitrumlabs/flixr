@@ -1291,6 +1291,15 @@ PODS:
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/UserDefaults (~> 8.1)
     - PromisesObjC (~> 2.4)
+  - FirebaseMessaging (12.13.0):
+    - FirebaseCore (~> 12.13.0)
+    - FirebaseInstallations (~> 12.13.0)
+    - GoogleDataTransport (~> 10.1)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Reachability (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - nanopb (~> 3.30910.0)
   - FirebaseMessagingInterop (12.13.0)
   - FirebasePerformance (12.13.0):
     - FirebaseCore (~> 12.13.0)
@@ -1500,7 +1509,9 @@ DEPENDENCIES:
   - FirebaseCrashlytics
   - FirebaseFirestore
   - FirebaseFunctions
+  - FirebaseMessaging
   - FirebasePerformance
+  - FirebaseRemoteConfig
   - Google-Mobile-Ads-SDK
   - GoogleSignIn
 
@@ -1524,6 +1535,7 @@ SPEC REPOS:
     - FirebaseFirestoreInternal
     - FirebaseFunctions
     - FirebaseInstallations
+    - FirebaseMessaging
     - FirebaseMessagingInterop
     - FirebasePerformance
     - FirebaseRemoteConfig
@@ -1566,6 +1578,7 @@ SPEC CHECKSUMS:
   FirebaseFirestoreInternal: f5748d57cf73bb51f01ecebce87c72321193e388
   FirebaseFunctions: 62278244e82cbec2047c91fe80f900a6b0194719
   FirebaseInstallations: 134bde50e477628ded76070efdb12d515d53f948
+  FirebaseMessaging: 30564b85d2f81a96f9d312bd23acf8186ff092ae
   FirebaseMessagingInterop: 3e3f3243eb20335a624218fa84c3f527bcf252cb
   FirebasePerformance: 0d1e1fc53c4f6fc62bf8ef42d1a5670f87c51c77
   FirebaseRemoteConfig: 672634c19a4a5bc329fd85e84cfea51fce514c4b
@@ -1589,6 +1602,6 @@ SPEC CHECKSUMS:
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
 
-PODFILE CHECKSUM: 03149f53135e994a7a1d67fb26a9bb3ba1c8cfef
+PODFILE CHECKSUM: 1cdd2ebcfc05adecd93fc91c52623a88f14594d4
 
 COCOAPODS: 1.16.2

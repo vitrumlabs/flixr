@@ -26,17 +26,18 @@ struct DiscoverSwipeScreen: View {
 
     @Environment(UserLibrary.self) private var library
     @Environment(DiscoverDeck.self) private var deck
+    @Environment(RemoteConfigManager.self) private var remoteConfig
 
     @State private var cardFlyDirection: CGFloat? = nil
     @State private var shuffleTrigger = 0
     @State private var adLoader = NativeAdLoader()
 
-    // Interleaves an ad slot after every 8th movie
     private var deckItems: [DeckItem] {
+        guard remoteConfig.adsEnabled else { return deck.movies.map { .movie($0) } }
         var result: [DeckItem] = []
         for (i, movie) in deck.movies.enumerated() {
             result.append(.movie(movie))
-            if (i + 1) % 8 == 0 {
+            if (i + 1) % remoteConfig.swipesPerAd == 0 {
                 result.append(.ad(id: "ad-slot-\(i)"))
             }
         }
@@ -79,14 +80,11 @@ struct DiscoverSwipeScreen: View {
                                 onLike: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        Task { await library.like(movie) }
+                                        Task { await library.addToWatchlist(movie) }
                                     }
                                 },
                                 onSkip: { item in
                                     advance()
-                                    if case .movie(let movie) = item {
-                                        Task { await library.skip(movie) }
-                                    }
                                 },
                                 onTap: { onOpenDetail($0) }
                             )

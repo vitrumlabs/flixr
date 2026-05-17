@@ -186,6 +186,7 @@ class AuthManager: NSObject {
     func deleteAccount() async throws {
         try await Functions.functions(region: "europe-west1")
             .httpsCallable("deleteUserAccount").call()
+        try? Auth.auth().signOut()
         GIDSignIn.sharedInstance.signOut()
     }
 

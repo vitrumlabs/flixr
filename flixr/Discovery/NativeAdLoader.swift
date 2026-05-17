@@ -9,12 +9,12 @@ final class NativeAdLoader: NSObject {
     private(set) var ad: NativeAd?
     private var loader: AdLoader?
 
-    private let adUnitID = "ca-app-pub-3940256099942544/3986624511"
-
     func loadNext() {
         ad = nil
+        let unitID = RemoteConfigManager.shared.adUnitID
+        guard !unitID.isEmpty else { return }
         loader = AdLoader(
-            adUnitID: adUnitID,
+            adUnitID: unitID,
             rootViewController: nil,
             adTypes: [.native],
             options: nil
