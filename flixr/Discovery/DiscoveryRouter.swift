@@ -1,4 +1,5 @@
 import SwiftUI
+import AppTrackingTransparency
 import FirebaseAnalytics
 
 // MARK: - Per-tab navigation state
@@ -49,6 +50,14 @@ struct DiscoveryFlowView: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showProfile) {
             ProfileView()
+        }
+        .task {
+            // ATT must be requested before the first ad impression.
+            // Small delay lets the UI settle so the system prompt doesn't
+            // appear over the launch animation.
+            guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
+            try? await Task.sleep(for: .seconds(1))
+            await ATTrackingManager.requestTrackingAuthorization()
         }
         .onChange(of: notifManager.pendingMovieID) { _, movieID in
             guard let movieID else { return }
