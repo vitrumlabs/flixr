@@ -44,10 +44,7 @@ struct ProfileView: View {
     }
 
     private let settingRows: [(label: String, sub: String, icon: String)] = [
-        ("Filters & Preferences", "Genres, mood, decade",  "slider.horizontal.3"),
-        ("Streaming services",    "Choose your platforms", "play.tv"),
-        ("Subscription",          "Manage your plan",      "star"),
-        ("Notifications",         "New matches · Trailers","bell"),
+        ("Notifications", "New matches · Trailers", "bell"),
     ]
 
     var body: some View {
