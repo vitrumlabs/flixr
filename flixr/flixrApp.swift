@@ -1,10 +1,16 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseAppCheck
+import FirebaseMessaging
 import GoogleSignIn
 import GoogleMobileAds
 
-class AppDelegate: NSObject, UIApplicationDelegate {}
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Messaging.messaging().apnsToken = deviceToken
+    }
+}
 
 @main
 struct flixrApp: App {
@@ -31,6 +37,7 @@ struct flixrApp: App {
                 .environment(authManager)
                 .environment(library)
                 .environment(RemoteConfigManager.shared)
+                .environment(NotificationManager.shared)
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }

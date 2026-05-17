@@ -66,14 +66,23 @@ struct MovieSnapshot {
     }
 }
 
+// MARK: - Notification preferences
+
+struct NotificationPrefs {
+    var newRecommendations: Bool = true
+    var watchlistReminders: Bool = true
+    var weeklyDigest:       Bool = false
+}
+
 // MARK: - UserLibrary
 
 @Observable
 final class UserLibrary {
-    private(set) var watchlist:     [MovieSnapshot] = []
-    private(set) var liked:         [MovieSnapshot] = []
-    private(set) var isFlixrPlus:   Bool            = false
-    private(set) var skippedCount:  Int             = 0
+    private(set) var watchlist:     [MovieSnapshot]  = []
+    private(set) var liked:         [MovieSnapshot]  = []
+    private(set) var isFlixrPlus:   Bool             = false
+    private(set) var skippedCount:  Int              = 0
+    private(set) var notifPrefs:    NotificationPrefs = .init()
 
     var topGenres: [String] {
         var counts: [String: Int] = [:]
@@ -107,6 +116,13 @@ final class UserLibrary {
                 }
                 self.skippedCount = (data["skipped"] as? [Any])?.count ?? 0
                 self.isFlixrPlus  = data["isFlixrPlus"] as? Bool ?? false
+                if let p = data["notificationPrefs"] as? [String: Any] {
+                    self.notifPrefs = NotificationPrefs(
+                        newRecommendations: p["newRecommendations"] as? Bool ?? true,
+                        watchlistReminders: p["watchlistReminders"] as? Bool ?? true,
+                        weeklyDigest:       p["weeklyDigest"]       as? Bool ?? false
+                    )
+                }
             }
     }
 
@@ -117,6 +133,19 @@ final class UserLibrary {
         liked        = []
         isFlixrPlus  = false
         skippedCount = 0
+        notifPrefs   = .init()
+    }
+
+    func saveNotifPrefs(_ prefs: NotificationPrefs) async {
+        guard let uid else { return }
+        notifPrefs = prefs
+        try? await db.collection("users").document(uid).setData([
+            "notificationPrefs": [
+                "newRecommendations": prefs.newRecommendations,
+                "watchlistReminders": prefs.watchlistReminders,
+                "weeklyDigest":       prefs.weeklyDigest,
+            ]
+        ], merge: true)
     }
 
     // MARK: - Like

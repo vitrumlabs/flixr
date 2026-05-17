@@ -13,6 +13,7 @@ struct ProfileView: View {
     @State private var deleteError: String? = nil
     @State private var mailUnavailable = false
     @State private var activeLegal: LegalDestination? = nil
+    @State private var showNotifPrefs = false
 
     private var user: FirebaseAuth.User? { auth.user }
 
@@ -180,7 +181,9 @@ struct ProfileView: View {
                     .padding(.bottom, 18)
 
                     // Settings rows
-                    ProfileRowGroup(rows: settingRows, action: { _ in })
+                    ProfileRowGroup(rows: settingRows) { label in
+                        if label == "Notifications" { showNotifPrefs = true }
+                    }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 12)
 
@@ -246,6 +249,9 @@ struct ProfileView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showNotifPrefs) {
+            NotificationPreferencesView()
+        }
         .sheet(item: $activeLegal) { dest in
             SafariView(url: dest.url)
                 .ignoresSafeArea()
