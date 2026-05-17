@@ -200,35 +200,41 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
 
-                    // Sign out / Delete account
-                    VStack(spacing: 0) {
-                        Button(action: { auth.signOut() }) {
-                            Text("Sign out")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color.dFg3)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
+                    // Sign out
+                    Button(action: { auth.signOut() }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 15, weight: .semibold))
+                            Text("Sign Out")
+                                .font(.system(size: 15, weight: .semibold))
                         }
-                        .buttonStyle(.plain)
-
-                        Divider()
-                            .background(Color.dLine)
-
-                        Button(action: { showDeleteConfirmation = true }) {
-                            Text(isDeletingAccount ? "Deleting…" : "Delete Account")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.red)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isDeletingAccount)
+                        .foregroundColor(Color.dFg3)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(Color.white.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
                     }
-                    .background(Color.white.opacity(0.04))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
+                    .buttonStyle(.plain)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
+                    .padding(.bottom, 10)
+
+                    // Delete account
+                    Button(action: { showDeleteConfirmation = true }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 12, weight: .medium))
+                            Text(isDeletingAccount ? "Deleting…" : "Delete Account")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(.red.opacity(0.7))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isDeletingAccount)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 10)
 
                     // Version
                     Text(appVersion)
