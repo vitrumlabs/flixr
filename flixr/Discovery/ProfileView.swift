@@ -8,12 +8,10 @@ struct ProfileView: View {
     @Environment(AuthManager.self) private var auth
     @Environment(UserLibrary.self) private var library
 
-    @State private var showDeleteConfirmation = false
-    @State private var isDeletingAccount = false
-    @State private var deleteError: String? = nil
     @State private var mailUnavailable = false
     @State private var activeLegal: LegalDestination? = nil
     @State private var showNotifPrefs = false
+    @State private var showDeleteAccount = false
 
     private var user: FirebaseAuth.User? { auth.user }
 
@@ -31,10 +29,6 @@ struct ProfileView: View {
         guard let date = user?.metadata.creationDate else { return "" }
         return "Member since \(Calendar.current.component(.year, from: date))"
     }
-
-    private var stats: [(String, String)] {[
-        ("Saved", library.watchlist.count.formatted()),
-    ]}
 
     private var appVersion: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -130,29 +124,6 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 18)
 
-                    // Stats grid
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                        ForEach(stats, id: \.0) { stat in
-                            VStack(spacing: 2) {
-                                Text(stat.1)
-                                    .font(.flxDisplay(22))
-                                    .foregroundColor(.white)
-                                Text(stat.0)
-                                    .font(.system(size: 11, weight: .bold))
-                                    .tracking(0.8)
-                                    .textCase(.uppercase)
-                                    .foregroundColor(Color.dFg3)
-                            }
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                            .background(Color.white.opacity(0.04))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.dLine, lineWidth: 1))
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 18)
-
                     // Taste card
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Your taste")
@@ -201,24 +172,31 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
 
-                    // Sign out
-                    ProfileRowGroup(
-                        rows: [("Sign Out", "See you next time", "rectangle.portrait.and.arrow.right")],
-                        action: { _ in auth.signOut() },
-                        showChevron: false
-                    )
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-
                     // Delete account
                     ProfileRowGroup(
-                        rows: [(isDeletingAccount ? "Deleting…" : "Delete Account", "Permanently removes all data", "person.crop.circle.badge.minus")],
-                        action: { _ in if !isDeletingAccount { showDeleteConfirmation = true } },
-                        showChevron: false,
+                        rows: [("Delete Account", "Permanently removes all data", "person.crop.circle.badge.minus")],
+                        action: { _ in showDeleteAccount = true },
                         isDestructive: true
                     )
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 10)
+                    .padding(.bottom, 24)
+
+                    // Sign out — minimal, below everything else
+                    Button(action: { auth.signOut() }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 14))
+                            Text("Sign Out")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(Color.dFg3)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
 
                     // Version
                     Text(appVersion)
@@ -229,41 +207,17 @@ struct ProfileView: View {
                 }
             }
         }
+        .presentationDragIndicator(.visible)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showNotifPrefs) {
             NotificationPreferencesView()
         }
+        .sheet(isPresented: $showDeleteAccount) {
+            DeleteAccountView()
+        }
         .sheet(item: $activeLegal) { dest in
             SafariView(url: dest.url)
                 .ignoresSafeArea()
-        }
-        .confirmationDialog(
-            "Delete Account",
-            isPresented: $showDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete Account and All Data", role: .destructive) {
-                isDeletingAccount = true
-                Task {
-                    do {
-                        try await auth.deleteAccount()
-                    } catch {
-                        deleteError = "Couldn't delete your account. Please sign out and sign back in, then try again."
-                    }
-                    isDeletingAccount = false
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will permanently delete your account, watchlist, and all activity. This cannot be undone.")
-        }
-        .alert("Deletion Failed", isPresented: Binding(
-            get: { deleteError != nil },
-            set: { if !$0 { deleteError = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(deleteError ?? "")
         }
         .alert("Mail Not Available", isPresented: $mailUnavailable) {
             Button("OK", role: .cancel) {}
@@ -281,6 +235,144 @@ struct ProfileView: View {
         } else {
             mailUnavailable = true
         }
+    }
+}
+
+// MARK: - Delete Account screen
+
+private struct DeleteAccountView: View {
+    @Environment(AuthManager.self) private var auth
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var isDeleting = false
+    @State private var deleteError: String? = nil
+
+    private let consequences: [(String, String)] = [
+        ("Your profile and login",          "person.crop.circle"),
+        ("Your watchlist and saved films",   "bookmark"),
+        ("Your taste profile",              "sparkles"),
+        ("All preferences and activity",    "chart.bar"),
+    ]
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [Color(hex: "14070a"), .black],
+                center: UnitPoint(x: 0.5, y: 0),
+                startRadius: 0, endRadius: 500
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 44, height: 44)
+                    }
+                    .glassEffect(.regular.interactive(), in: .circle)
+                    .padding(.leading, 16)
+                    Spacer()
+                }
+                .padding(.top, 14)
+                .padding(.bottom, 4)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.red.opacity(0.1))
+                                .overlay(Circle().strokeBorder(Color.red.opacity(0.3), lineWidth: 1.5))
+                            Image(systemName: "person.crop.circle.badge.minus")
+                                .font(.system(size: 36))
+                                .foregroundColor(.red)
+                        }
+                        .frame(width: 88, height: 88)
+                        .padding(.top, 28)
+                        .padding(.bottom, 20)
+
+                        Text("Delete Account")
+                            .font(.flxDisplay(28))
+                            .foregroundColor(.white)
+                            .padding(.bottom, 10)
+
+                        Text("This permanently deletes your account and all data. There is no going back.")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color.dFg3)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 36)
+                            .padding(.bottom, 32)
+
+                        VStack(spacing: 0) {
+                            ForEach(Array(consequences.enumerated()), id: \.element.0) { i, item in
+                                HStack(spacing: 14) {
+                                    Image(systemName: item.1)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.red.opacity(0.65))
+                                        .frame(width: 20)
+                                    Text(item.0)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color.dFg2)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                if i < consequences.count - 1 {
+                                    Divider().background(Color.dLine).padding(.leading, 50)
+                                }
+                            }
+                        }
+                        .background(Color.white.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.dLine, lineWidth: 1))
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 28)
+
+                        if let error = deleteError {
+                            Text(error)
+                                .font(.system(size: 13))
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 16)
+                        }
+
+                        Button(action: {
+                            isDeleting = true
+                            Task {
+                                do {
+                                    try await auth.deleteAccount()
+                                } catch {
+                                    deleteError = "Couldn't delete your account. Please sign out and sign back in, then try again."
+                                    isDeleting = false
+                                }
+                            }
+                        }) {
+                            HStack(spacing: 10) {
+                                if isDeleting {
+                                    ProgressView().tint(.white).scaleEffect(0.85)
+                                }
+                                Text(isDeleting ? "Deleting…" : "Delete My Account")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(isDeleting ? Color.red.opacity(0.5) : Color.red)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isDeleting)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 110)
+                    }
+                }
+            }
+        }
+        .presentationDragIndicator(.visible)
+        .preferredColorScheme(.dark)
     }
 }
 
@@ -358,6 +450,7 @@ private struct ProfileRowGroup: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 14)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
 

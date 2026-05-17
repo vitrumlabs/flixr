@@ -20,12 +20,24 @@ struct NotificationPreferencesView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
 
-                    Text("Notifications")
-                        .font(.flxDisplay(32))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 6)
+                    HStack(alignment: .center, spacing: 12) {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                        }
+                        .glassEffect(.regular.interactive(), in: .circle)
+
+                        Text("Notifications")
+                            .font(.flxDisplay(32))
+                            .foregroundColor(.white)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, 6)
 
                     Text("Choose what Flixr can notify you about.")
                         .font(.system(size: 14))
@@ -80,17 +92,6 @@ struct NotificationPreferencesView: View {
                     .padding(.horizontal, 20)
                 }
             }
-        }
-        .overlay(alignment: .topLeading) {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-            }
-            .glassEffect(.regular.interactive(), in: .circle)
-            .padding(.top, 20)
-            .padding(.leading, 16)
         }
         .preferredColorScheme(.dark)
         .onAppear {
