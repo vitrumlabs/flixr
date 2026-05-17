@@ -10,6 +10,7 @@ target 'flixr' do
   pod 'FirebaseCrashlytics'
   pod 'FirebaseAppCheck'
   pod 'FirebasePerformance'
+  pod 'FirebaseRemoteConfig'
   pod 'GoogleSignIn'
   pod 'Google-Mobile-Ads-SDK'
 end

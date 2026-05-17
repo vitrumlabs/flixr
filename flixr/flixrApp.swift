@@ -22,6 +22,7 @@ struct flixrApp: App {
         MobileAds.shared.start()
         _authManager = State(initialValue: AuthManager())
         _library = State(initialValue: UserLibrary())
+        Task { await RemoteConfigManager.shared.fetchAndActivate() }
     }
 
     var body: some Scene {
@@ -29,6 +30,7 @@ struct flixrApp: App {
             ContentView()
                 .environment(authManager)
                 .environment(library)
+                .environment(RemoteConfigManager.shared)
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }

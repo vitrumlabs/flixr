@@ -1501,6 +1501,7 @@ DEPENDENCIES:
   - FirebaseFirestore
   - FirebaseFunctions
   - FirebasePerformance
+  - FirebaseRemoteConfig
   - Google-Mobile-Ads-SDK
   - GoogleSignIn
 
@@ -1589,6 +1590,6 @@ SPEC CHECKSUMS:
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
 
-PODFILE CHECKSUM: 03149f53135e994a7a1d67fb26a9bb3ba1c8cfef
+PODFILE CHECKSUM: 4a3b848fe85208caab3d7530889fed61381c23bb
 
 COCOAPODS: 1.16.2
