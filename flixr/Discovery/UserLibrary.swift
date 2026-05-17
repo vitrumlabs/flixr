@@ -107,20 +107,7 @@ final class UserLibrary {
         listener?.remove()
         let ref = db.collection("users").document(uid)
         listener = ref.addSnapshotListener { [weak self] snapshot, _ in
-            guard let self else { return }
-
-            // Create the document if this is a brand-new account
-            if snapshot?.exists == false {
-                ref.setData([
-                    "watchlist":   [],
-                    "liked":       [],
-                    "skipped":     [],
-                    "isFlixrPlus": false,
-                ], merge: true)
-                return
-            }
-
-            guard let data = snapshot?.data() else { return }
+            guard let self, let data = snapshot?.data() else { return }
             if let raw = data["watchlist"] as? [[String: Any]] {
                 self.watchlist = raw.compactMap { MovieSnapshot($0) }
             }
