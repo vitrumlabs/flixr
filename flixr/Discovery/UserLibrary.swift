@@ -105,25 +105,38 @@ final class UserLibrary {
 
     func startListening(uid: String) {
         listener?.remove()
-        listener = db.collection("users").document(uid)
-            .addSnapshotListener { [weak self] snapshot, _ in
-                guard let self, let data = snapshot?.data() else { return }
-                if let raw = data["watchlist"] as? [[String: Any]] {
-                    self.watchlist = raw.compactMap { MovieSnapshot($0) }
-                }
-                if let raw = data["liked"] as? [[String: Any]] {
-                    self.liked = raw.compactMap { MovieSnapshot($0) }
-                }
-                self.skippedCount = (data["skipped"] as? [Any])?.count ?? 0
-                self.isFlixrPlus  = data["isFlixrPlus"] as? Bool ?? false
-                if let p = data["notificationPrefs"] as? [String: Any] {
-                    self.notifPrefs = NotificationPrefs(
-                        newRecommendations: p["newRecommendations"] as? Bool ?? true,
-                        watchlistReminders: p["watchlistReminders"] as? Bool ?? true,
-                        weeklyDigest:       p["weeklyDigest"]       as? Bool ?? false
-                    )
-                }
+        let ref = db.collection("users").document(uid)
+        listener = ref.addSnapshotListener { [weak self] snapshot, _ in
+            guard let self else { return }
+
+            // Create the document if this is a brand-new account
+            if snapshot?.exists == false {
+                ref.setData([
+                    "watchlist":   [],
+                    "liked":       [],
+                    "skipped":     [],
+                    "isFlixrPlus": false,
+                ], merge: true)
+                return
             }
+
+            guard let data = snapshot?.data() else { return }
+            if let raw = data["watchlist"] as? [[String: Any]] {
+                self.watchlist = raw.compactMap { MovieSnapshot($0) }
+            }
+            if let raw = data["liked"] as? [[String: Any]] {
+                self.liked = raw.compactMap { MovieSnapshot($0) }
+            }
+            self.skippedCount = (data["skipped"] as? [Any])?.count ?? 0
+            self.isFlixrPlus  = data["isFlixrPlus"] as? Bool ?? false
+            if let p = data["notificationPrefs"] as? [String: Any] {
+                self.notifPrefs = NotificationPrefs(
+                    newRecommendations: p["newRecommendations"] as? Bool ?? true,
+                    watchlistReminders: p["watchlistReminders"] as? Bool ?? true,
+                    weeklyDigest:       p["weeklyDigest"]       as? Bool ?? false
+                )
+            }
+        }
     }
 
     func stopListening() {
