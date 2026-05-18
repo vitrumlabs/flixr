@@ -77,6 +77,7 @@ struct SignInScreen: View {
                                         .foregroundColor(.fg3)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(showPassword ? "Hide password" : "Show password")
                             )
                         )
                     }
@@ -89,6 +90,7 @@ struct SignInScreen: View {
                         }
                         .font(.system(size: 14))
                         .foregroundColor(.fg2)
+                        .frame(minHeight: 44)
                     }
                     .padding(.top, 10)
 
@@ -171,6 +173,7 @@ struct SignUpScreen: View {
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(.white)
                                 .underline()
+                                .frame(minHeight: 44)
                                 .padding(.leading, 14)
                         }
                         .padding(.bottom, 24)
@@ -202,6 +205,7 @@ struct SignUpScreen: View {
                                         .foregroundColor(.fg3)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(showPassword ? "Hide password" : "Show password")
                             )
                         )
                     }

@@ -29,10 +29,6 @@ struct NotificationPreferencesView: View {
                         }
                         .glassEffect(.regular.interactive(), in: .circle)
 
-                        Text("Notifications")
-                            .font(.flxDisplay(32))
-                            .foregroundColor(.white)
-
                         Spacer()
                     }
                     .padding(.horizontal, 16)

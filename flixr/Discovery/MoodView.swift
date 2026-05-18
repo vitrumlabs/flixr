@@ -1,34 +1,69 @@
 import SwiftUI
 
-// MARK: - Sample prompts
+// MARK: - Mood presets
 
-private let samplePrompts = [
-    "Something that'll make me cry",
-    "Funny and light, nothing heavy",
-    "Keep me on the edge of my seat",
-    "A feel-good film for a rainy day",
-    "Epic and adventurous",
-    "Dark and thought-provoking",
-    "Late night, can't sleep vibes",
-    "Comfort rewatch energy",
+private let moodPresets: [String] = [
+    "Hype me up",
+    "Spaghetti western",
+    "Something to cry to",
+    "Space thriller",
+    "Mind-bending thriller",
+    "Cozy & warm",
+    "I'm stressed, distract me",
+    "Pirate adventure",
+    "Dark & intense",
+    "Need a good laugh",
 ]
 
-// MARK: - Screen: Mood
+// MARK: - Entry: owns input ↔ results navigation
 
 struct MoodView: View {
     var onOpenDetail: (Movie) -> Void
 
     @State private var query = ""
     @State private var results: [Movie] = []
+    @State private var showResults = false
+
+    var body: some View {
+        ZStack {
+            MoodInputView(query: $query) { movies in
+                results = movies
+                withAnimation(.easeInOut(duration: 0.3)) { showResults = true }
+            }
+
+            if showResults {
+                MoodResultsView(
+                    query: query,
+                    results: results,
+                    onBack: {
+                        withAnimation(.easeInOut(duration: 0.3)) { showResults = false }
+                    },
+                    onOpenDetail: onOpenDetail
+                )
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+    }
+}
+
+// MARK: - Input screen
+
+private struct MoodInputView: View {
+    @Binding var query: String
+    var onSearch: ([Movie]) -> Void
+
     @State private var phase: Phase = .idle
     @FocusState private var inputFocused: Bool
 
-    private enum Phase { case idle, loading, done, error }
+    private enum Phase { case idle, loading, error }
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
+    private let chipColumns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10),
     ]
+
+    private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
+    private var canSearch: Bool { !trimmed.isEmpty && phase != .loading }
 
     var body: some View {
         ZStack {
@@ -43,150 +78,138 @@ struct MoodView: View {
                 VStack(alignment: .leading, spacing: 0) {
 
                     // Header
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Mood")
-                            .font(.flxDisplay(32))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("What's the\nmood tonight?")
+                            .font(.flxDisplay(36))
                             .foregroundColor(.white)
-                        Text("What are you in the mood for?")
-                            .font(.system(size: 14))
+                        Text("Tell us how you're feeling — we'll find\na few movies that fit.")
+                            .font(.system(size: 15))
                             .foregroundColor(Color.dFg3)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 14)
-                    .padding(.bottom, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 24)
 
-                    // Prompt chips
-                    ChipWrap(items: samplePrompts, spacing: 8) { prompt in
-                        Button(action: { selectPrompt(prompt) }) {
-                            Text(prompt)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(query == prompt ? .white : Color.dFg2)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(
-                                    query == prompt
-                                        ? Color.flxRed.opacity(0.25)
-                                        : Color.white.opacity(0.06)
-                                )
-                                .clipShape(Capsule())
-                                .overlay(
-                                    Capsule().strokeBorder(
-                                        query == prompt
-                                            ? Color.flxRed.opacity(0.6)
-                                            : Color.dLine,
-                                        lineWidth: 1
-                                    )
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
-
-                    // Text input + search button
-                    HStack(spacing: 10) {
-                        TextField("", text: $query, prompt:
-                            Text("or describe your mood…")
-                                .foregroundColor(Color.dFg3)
+                    // Text area
+                    HStack(alignment: .top) {
+                        TextField(
+                            "e.g. 'something feel-good to watch with a friend'",
+                            text: $query,
+                            axis: .vertical
                         )
-                        .font(.system(size: 14))
+                        .font(.system(size: 15))
                         .foregroundColor(.white)
+                        .tint(.flxRed)
                         .focused($inputFocused)
+                        .lineLimit(4...)
                         .submitLabel(.search)
                         .onSubmit { runSearch() }
+                        .accessibilityLabel("Describe your mood")
                         .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(Color.dLine, lineWidth: 1)
-                        )
+                        .padding(.vertical, 14)
 
-                        Button(action: runSearch) {
-                            Group {
-                                if phase == .loading {
-                                    ProgressView().tint(.white).scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "arrow.right")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.white)
-                                }
+                        if !query.isEmpty {
+                            Button(action: {
+                                query = ""
+                                phase = .idle
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color.dFg3)
                             }
-                            .frame(width: 44, height: 44)
-                            .background(query.trimmingCharacters(in: .whitespaces).isEmpty ? Color.flxRed.opacity(0.35) : Color.flxRed)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .frame(minWidth: 44, minHeight: 44)
+                            .padding(.top, 6)
+                            .padding(.trailing, 4)
                         }
-                        .disabled(query.trimmingCharacters(in: .whitespaces).isEmpty || phase == .loading)
+                    }
+                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(
+                                inputFocused ? Color.flxRed.opacity(0.8) : Color.dLine,
+                                lineWidth: inputFocused ? 1.5 : 1
+                            )
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
+
+                    // "Or pick a mood" label
+                    Text("Or pick a mood")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(1.4)
+                        .textCase(.uppercase)
+                        .foregroundColor(Color.dFg3)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 14)
+
+                    // Preset chips — glass controls, shared sampling region
+                    GlassEffectContainer(spacing: 10) {
+                        LazyVGrid(columns: chipColumns, spacing: 10) {
+                            ForEach(moodPresets, id: \.self) { preset in
+                                let isSelected = query == preset
+                                Button(action: {
+                                    withAnimation(.bouncy) { query = preset }
+                                    inputFocused = false
+                                }) {
+                                    Text(preset)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(isSelected ? .white : Color.dFg2)
+                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                        .padding(.horizontal, 14)
+                                }
+                                .buttonStyle(.plain)
+                                .glassEffect(
+                                    (isSelected
+                                        ? Glass.regular.tint(.flxRed)
+                                        : .regular
+                                    ).interactive(),
+                                    in: Capsule()
+                                )
+                            }
+                        }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 28)
+                    .padding(.bottom, 24)
 
-                    // Results
-                    switch phase {
-                    case .idle:
-                        EmptyView()
-
-                    case .loading:
-                        HStack {
-                            Spacer()
-                            VStack(spacing: 12) {
-                                FlxSpinner()
-                                Text("Finding films…")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color.dFg3)
-                            }
-                            Spacer()
-                        }
-                        .padding(.top, 60)
-
-                    case .error:
-                        HStack {
-                            Spacer()
-                            VStack(spacing: 8) {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(Color.dFg3)
-                                Text("Couldn't find films right now.")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color.dFg3)
-                                Button("Try again") { runSearch() }
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.flxRed)
-                            }
-                            Spacer()
-                        }
-                        .padding(.top, 60)
-
-                    case .done:
-                        if results.isEmpty {
-                            HStack {
-                                Spacer()
-                                VStack(spacing: 8) {
-                                    Image(systemName: "film")
-                                        .font(.system(size: 32))
-                                        .foregroundColor(Color.dFg3)
-                                    Text("No matches found.\nTry a different mood.")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(Color.dFg3)
-                                        .multilineTextAlignment(.center)
-                                }
-                                Spacer()
-                            }
-                            .padding(.top, 60)
-                        } else {
-                            LazyVGrid(columns: columns, spacing: 12) {
-                                ForEach(results) { movie in
-                                    MoodResultCard(movie: movie) {
-                                        onOpenDetail(movie)
-                                    }
-                                }
-                            }
+                    if phase == .error {
+                        Text("Couldn't find films right now. Try again.")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.flxRed.opacity(0.8))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 20)
-                        }
+                            .padding(.bottom, 16)
                     }
 
-                    Spacer().frame(height: 110)
+                    // "Find my movie" CTA — inline, stays put when keyboard opens
+                    Button(action: runSearch) {
+                        HStack(spacing: 8) {
+                            if phase == .loading {
+                                ProgressView().tint(.white).scaleEffect(0.85)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            Text("Find my movie")
+                                .font(.system(size: 17, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            canSearch
+                                ? LinearGradient(
+                                    colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
+                                    startPoint: .top, endPoint: .bottom)
+                                : LinearGradient(
+                                    colors: [Color.white.opacity(0.12), Color.white.opacity(0.08)],
+                                    startPoint: .top, endPoint: .bottom)
+                        )
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(ScaleButtonStyle(scale: 0.97))
+                    .disabled(!canSearch)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
                 }
             }
             .scrollDismissesKeyboard(.immediately)
@@ -194,105 +217,18 @@ struct MoodView: View {
         .preferredColorScheme(.dark)
     }
 
-    private func selectPrompt(_ prompt: String) {
-        query = prompt
-        inputFocused = false
-        runSearch()
-    }
-
     private func runSearch() {
-        let trimmed = query.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, phase != .loading else { return }
+        guard canSearch else { return }
         inputFocused = false
         phase = .loading
         Task {
             do {
                 let movies = try await MovieService.shared.moodSearch(query: trimmed)
-                results = movies
-                phase = .done
+                phase = .idle
+                onSearch(movies)
             } catch {
                 phase = .error
             }
-        }
-    }
-}
-
-// MARK: - Result card
-
-private struct MoodResultCard: View {
-    let movie: Movie
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 6) {
-                GeometryReader { geo in
-                    PosterArt(movie: movie, width: geo.size.width)
-                        .frame(width: geo.size.width, height: geo.size.width * 1.5)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .aspectRatio(2/3, contentMode: .fit)
-
-                Text(movie.title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Chip wrapping layout
-
-private struct ChipWrap<Item: Hashable, Content: View>: View {
-    let items: [Item]
-    let spacing: CGFloat
-    @ViewBuilder let content: (Item) -> Content
-
-    var body: some View {
-        FlowLayout(spacing: spacing) {
-            ForEach(items, id: \.self) { item in
-                content(item)
-            }
-        }
-    }
-}
-
-private struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxW = proposal.width ?? .infinity
-        var height: CGFloat = 0
-        var rowX: CGFloat = 0
-        var rowH: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if rowX + size.width > maxW, rowX > 0 {
-                height += rowH + spacing
-                rowX = 0; rowH = 0
-            }
-            rowX += size.width + spacing
-            rowH = max(rowH, size.height)
-        }
-        return CGSize(width: maxW, height: height + rowH)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowH: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX, x > bounds.minX {
-                y += rowH + spacing
-                x = bounds.minX; rowH = 0
-            }
-            sub.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            rowH = max(rowH, size.height)
         }
     }
 }

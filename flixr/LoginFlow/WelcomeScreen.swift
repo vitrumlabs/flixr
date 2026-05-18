@@ -14,7 +14,7 @@ struct WelcomeScreen: View {
                         Button("Sign In") { go(.signin) }
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(.white)
-                            .padding(.vertical, 11)
+                            .padding(.vertical, 12)
                             .padding(.horizontal, 26)
                             .background(
                                 LinearGradient(
@@ -24,6 +24,7 @@ struct WelcomeScreen: View {
                             )
                             .clipShape(Capsule())
                             .overlay(Capsule().strokeBorder(Color.black.opacity(0.28), lineWidth: 1))
+                            .buttonStyle(ScaleButtonStyle(scale: 0.97))
                     }
                     .padding(.bottom, 28)
 
