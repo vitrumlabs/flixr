@@ -36,9 +36,6 @@ struct WatchlistView: View {
                 // Header
                 HStack(alignment: .bottom, spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Watchlist")
-                            .font(.flxDisplay(32))
-                            .foregroundColor(.white)
                         Text("\(allSaved.count) title\(allSaved.count == 1 ? "" : "s")")
                             .font(.system(size: 13))
                             .foregroundColor(Color.dFg3)
