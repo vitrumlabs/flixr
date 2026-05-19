@@ -41,7 +41,7 @@ struct MovieDetailView: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.white)
-                            .frame(width: 52, height: 52)
+                            .frame(width: 44, height: 44)
                     }
                     .glassEffect(.clear.interactive(), in: .circle)
                     .accessibilityLabel("Back")

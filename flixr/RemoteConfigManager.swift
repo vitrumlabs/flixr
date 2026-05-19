@@ -5,8 +5,13 @@ import Observation
 final class RemoteConfigManager {
     static let shared = RemoteConfigManager()
 
-    // Empty until a real unit ID is pushed via Remote Config — ads simply won't load
-    private(set) var adUnitID:    String = ""
+    #if DEBUG
+    private static let defaultAdUnitID = "ca-app-pub-3940256099942544/3986624511"
+    #else
+    private static let defaultAdUnitID = "ca-app-pub-3940256099942544/3986624511"
+    #endif
+
+    private(set) var adUnitID:    String = RemoteConfigManager.defaultAdUnitID
     private(set) var swipesPerAd: Int    = 8
     private(set) var adsEnabled:  Bool   = true
 
@@ -21,7 +26,7 @@ final class RemoteConfigManager {
         #endif
         rc.configSettings = settings
         rc.setDefaults([
-            "ad_unit_id":    "" as NSObject,
+            "ad_unit_id":    Self.defaultAdUnitID as NSObject,
             "swipes_per_ad": 8 as NSObject,
             "ads_enabled":   true as NSObject,
         ])

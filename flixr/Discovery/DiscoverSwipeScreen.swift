@@ -134,10 +134,10 @@ struct DiscoverSwipeScreen: View {
         }
         .preferredColorScheme(.dark)
         .task {
-            // Only load if the deck is empty — preserves position when
-            // returning from MovieDetailView
+            // Always prime the ad loader — the view is recreated on each
+            // navigation so adLoader is fresh even when the deck has movies.
+            if adLoader.ad == nil { adLoader.loadNext() }
             if deck.movies.isEmpty {
-                adLoader.loadNext()
                 await deck.loadMovies(filters: filters)
             }
         }
@@ -145,6 +145,12 @@ struct DiscoverSwipeScreen: View {
             cardFlyDirection = nil
             adLoader.loadNext()
             Task { await deck.loadMovies(filters: newFilters) }
+        }
+        // Remote Config may not have resolved adUnitID when the view first appeared,
+        // causing the initial loadNext() to bail out. Retry as soon as the ID arrives.
+        .onChange(of: remoteConfig.adUnitID) { _, newID in
+            guard !newID.isEmpty, adLoader.ad == nil else { return }
+            adLoader.loadNext()
         }
     }
 
@@ -156,15 +162,17 @@ struct DiscoverSwipeScreen: View {
 
         // Include any unloaded ad skip in the same animation block to prevent a
         // visible jump between the outgoing card and the next movie.
+        var skippedUnloadedAd = false
         withAnimation(.easeOut(duration: 0.2)) {
             deck.deckIndex += 1
             while let front = Array(deckItems.dropFirst(deck.deckIndex)).first,
                   case .ad = front, adLoader.ad == nil {
                 deck.deckIndex += 1
+                skippedUnloadedAd = true
             }
         }
 
-        if wasAd { adLoader.loadNext() }
+        if wasAd || skippedUnloadedAd { adLoader.loadNext() }
 
         let moviesLeft = currentItems.filter { if case .movie = $0 { return true }; return false }.count
         if moviesLeft < 15 { Task { await deck.refillIfNeeded(filters: filters) } }
