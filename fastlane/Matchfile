@@ -1,0 +1,15 @@
+git_url "https://github.com/vitrumlabs/ios-certs"
+
+storage_mode "git"
+type "appstore"
+
+app_identifier ["vitrumlabs.flixr"]
+username "info@vitrumlabs.com"
+
+# One-time setup:
+#   1. Create a private GitHub repo: vitrumlabs/ios-certs
+#   2. Run: bundle exec fastlane match init   (if not already done)
+#   3. Run: bundle exec fastlane match appstore
+#      This creates an App Store distribution cert + provisioning profile,
+#      encrypts them, and pushes them to the ios-certs repo.
+#      You will be prompted to set an encryption passphrase — store it in 1Password.

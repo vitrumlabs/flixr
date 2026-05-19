@@ -57,11 +57,15 @@
 		};
 		46B640F52FACA4C400E34B1A /* flixrTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = flixrTests;
 			sourceTree = "<group>";
 		};
 		46B640FF2FACA4C400E34B1A /* flixrUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = flixrUITests;
 			sourceTree = "<group>";
 		};
@@ -146,6 +150,7 @@
 				8C25F26797B32F149CA5A1A1 /* [CP] Embed Pods Frameworks */,
 				B995EF050486FE5CF4C6C987 /* [CP] Copy Pods Resources */,
 				4678DF792FB8D43500C1FA0B /* ShellScript */,
+				E61E2C1ADBEA932ADADF04D9 /* Select GoogleService-Info.plist for configuration */,
 			);
 			buildRules = (
 			);
@@ -352,6 +357,24 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-resources.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		E61E2C1ADBEA932ADADF04D9 /* Select GoogleService-Info.plist for configuration */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Select GoogleService-Info.plist for configuration";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Overwrite GoogleService-Info.plist with the environment-specific one.\n# Debug builds use flixr/GoogleService-Info.plist (auto-bundled via file sync).\n# Release builds require Config/Release/GoogleService-Info.plist (prod project, gitignored).\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  PLIST_SRC=\"${SRCROOT}/Config/Release/GoogleService-Info.plist\"\n  PLIST_DEST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\n  if [ ! -f \"${PLIST_SRC}\" ]; then\n    echo \"error: Missing Config/Release/GoogleService-Info.plist\"\n    echo \"error: Download it from Firebase Console for vitrumlabs-flixr-prod and place it at Config/Release/\"\n    exit 1\n  fi\n  cp \"${PLIST_SRC}\" \"${PLIST_DEST}\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

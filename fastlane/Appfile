@@ -1,0 +1,8 @@
+app_identifier "vitrumlabs.flixr"
+apple_id "info@vitrumlabs.com"
+team_id "Z2FJU6P53W"
+
+# App Store Connect API key — avoids 2FA prompts in CI and local runs.
+# Create at: App Store Connect → Users and Access → Integrations → Keys
+# Set FASTLANE_APP_STORE_CONNECT_API_KEY_PATH env var pointing to the .p8 file,
+# or configure via `app_store_connect_api_key` in each Fastfile lane.

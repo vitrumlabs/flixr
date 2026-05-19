@@ -1,0 +1,76 @@
+default_platform :ios
+
+platform :ios do
+
+  # ---------------------------------------------------------------------------
+  # beta — builds Release and uploads to TestFlight
+  #
+  # Prerequisites (one-time):
+  #   1. Create App Store Connect API key (see Appfile comments)
+  #   2. Create vitrumlabs/ios-certs private repo
+  #   3. Run: bundle exec fastlane match appstore
+  #   4. Place Config/Release/GoogleService-Info.plist (prod Firebase project)
+  #
+  # Run:
+  #   bundle exec fastlane beta
+  # ---------------------------------------------------------------------------
+  lane :beta do
+    # Sync App Store distribution cert + provisioning profile
+    match(type: "appstore", readonly: true)
+
+    # Increment build number to current timestamp (avoids TestFlight rejection for duplicate build)
+    increment_build_number(
+      build_number: Time.now.strftime("%Y%m%d%H%M"),
+      xcodeproj: "flixr.xcodeproj"
+    )
+
+    build_app(
+      workspace: "flixr.xcworkspace",
+      scheme: "flixr",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "vitrumlabs.flixr" => "match AppStore vitrumlabs.flixr"
+        }
+      },
+      output_directory: "build",
+      output_name: "flixr.ipa",
+      clean: true
+    )
+
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      changelog: "Internal build"
+    )
+
+    clean_build_artifacts
+  end
+
+  # ---------------------------------------------------------------------------
+  # release — submits current TestFlight build to App Store review
+  #
+  # Run after a beta build has been tested and approved.
+  #   bundle exec fastlane release build:<build_number>
+  # ---------------------------------------------------------------------------
+  lane :release do |options|
+    deliver(
+      build_number: options[:build],
+      submit_for_review: true,
+      automatic_release: false,
+      force: true,
+      skip_screenshots: true,
+      skip_metadata: false
+    )
+  end
+
+  # ---------------------------------------------------------------------------
+  # sync_certs — refreshes local signing assets from the ios-certs repo.
+  # Run this on a new machine or after cert rotation.
+  #   bundle exec fastlane sync_certs
+  # ---------------------------------------------------------------------------
+  lane :sync_certs do
+    match(type: "appstore", readonly: true)
+  end
+
+end
