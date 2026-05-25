@@ -31,17 +31,6 @@
       shouldAutocreateTestPlan = "YES">
       <Testables>
          <TestableReference
-            skipped = "YES"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "46B640F12FACA4C400E34B1A"
-               BuildableName = "flixrTests.xctest"
-               BlueprintName = "flixrTests"
-               ReferencedContainer = "container:flixr.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
             skipped = "NO"
             parallelizable = "YES">
             <BuildableReference
@@ -79,6 +68,16 @@
          <EnvironmentVariable
             key = "FIRAAppCheckDebugToken"
             value = "5E853C9A-CA12-4F80-8BF2-1B6E1F766951"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SNAPSHOT_TEST_EMAIL"
+            value = "testing@vitrumlabs.com"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SNAPSHOT_TEST_PASSWORD"
+            value = "testPassword"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>

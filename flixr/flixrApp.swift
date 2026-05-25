@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 import FirebaseCore
 import FirebaseAppCheck
 import FirebaseMessaging
@@ -40,6 +41,10 @@ struct flixrApp: App {
         AppCheck.setAppCheckProviderFactory(DeviceCheckProviderFactory())
         #endif
         FirebaseApp.configure()
+        if CommandLine.arguments.contains("UI_TESTING") {
+            try? Auth.auth().signOut()
+            GIDSignIn.sharedInstance.signOut()
+        }
         MobileAds.shared.start()
         _authManager = State(initialValue: AuthManager())
         _library = State(initialValue: UserLibrary())
