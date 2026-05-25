@@ -4,7 +4,7 @@ storage_mode "git"
 type "appstore"
 
 app_identifier ["vitrumlabs.flixr"]
-username "info@vitrumlabs.com"
+username "kingan@tcd.ie"
 
 # One-time setup:
 #   1. Create a private GitHub repo: vitrumlabs/ios-certs

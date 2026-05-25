@@ -9,12 +9,13 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.612316598166-b68gh68kcm0n01eetol4893fpef50rb6</string>
+				<string>com.googleusercontent.apps.326402391581-nsr9rbh7h7pisoklotc57noq012vnvsa</string>
+				<string>com.googleusercontent.apps.884898443901-pag7jevgir5rjv1ee67jrnsnfhtk1qqk</string>
 			</array>
 		</dict>
 	</array>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-8886983866618261~8563312498</string>
+	<string>ca-app-pub-4924727642277920~2928429164</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>We use this to show you more relevant film recommendations and ads tailored to your interests.</string>
 	<key>SKAdNetworkItems</key>
@@ -71,6 +72,8 @@
 		<dict><key>SKAdNetworkIdentifier</key><string>3qcr597p9d.skadnetwork</string></dict>
 		<dict><key>SKAdNetworkIdentifier</key><string>paus73b13t.skadnetwork</string></dict>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

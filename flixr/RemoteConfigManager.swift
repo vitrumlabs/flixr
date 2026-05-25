@@ -8,7 +8,7 @@ final class RemoteConfigManager {
     #if DEBUG
     private static let defaultAdUnitID = "ca-app-pub-3940256099942544/3986624511"
     #else
-    private static let defaultAdUnitID = "ca-app-pub-3940256099942544/3986624511"
+    private static let defaultAdUnitID = "ca-app-pub-4924727642277920/1083653006"
     #endif
 
     private(set) var adUnitID:    String = RemoteConfigManager.defaultAdUnitID

@@ -1,0 +1,23 @@
+Flixr finds your next favourite film based on how you feel right now.
+
+Tell Flixr your mood — whether you want something cosy, thrilling, hilarious, or thought-provoking — and it surfaces movies that actually match the moment. No endless scrolling through catalogues. No decision fatigue. Just swipe, discover, and watch.
+
+MOOD-BASED DISCOVERY
+Describe how you're feeling and let Flixr do the work. Our mood search understands natural language so you can say "something fun for a rainy evening" or "a mind-bending thriller" and get results that fit.
+
+SWIPE TO EXPLORE
+Browse movie cards one at a time. Swipe right to add to your watchlist, swipe left to pass. It's the fastest way to find something you actually want to watch.
+
+YOUR WATCHLIST, ALWAYS WITH YOU
+Everything you've saved is in one place, synced across your devices. Never lose track of a film you wanted to see.
+
+PERSONALISED RECOMMENDATIONS
+Flixr learns what you love. The more you use it, the better your recommendations get — surfaced as notifications so great films find you, not the other way around.
+
+POWERED BY TMDB
+Movie data, posters, and ratings from The Movie Database — one of the world's most comprehensive film databases.
+
+SIGN IN YOUR WAY
+Quick, secure sign-in with Sign in with Apple or Google. Your data stays yours.
+
+Flixr is free to download and use.

@@ -1,0 +1,3 @@
+Welcome to Flixr — our first release.
+
+Discover movies by mood, swipe to save, and get personalised recommendations delivered to you.

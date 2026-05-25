@@ -15,6 +15,12 @@ platform :ios do
   #   bundle exec fastlane beta
   # ---------------------------------------------------------------------------
   lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+      key_filepath: ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"]
+    )
+
     # Sync App Store distribution cert + provisioning profile
     match(type: "appstore", readonly: true)
 
@@ -36,12 +42,59 @@ platform :ios do
       },
       output_directory: "build",
       output_name: "flixr.ipa",
-      clean: true
+      clean: true,
+      disable_xcpretty: true
     )
 
     upload_to_testflight(
+      api_key: api_key,
       skip_waiting_for_build_processing: true,
       changelog: "Internal build"
+    )
+
+    clean_build_artifacts
+  end
+
+  # ---------------------------------------------------------------------------
+  # beta_dev — builds an ad-hoc Debug binary (dev Firebase) and distributes
+  # via Firebase App Distribution. Use this to share dev builds with testers
+  # without going through TestFlight or touching prod Firebase.
+  #
+  # Prerequisites (one-time):
+  #   bundle exec fastlane add_plugin firebase_app_distribution
+  #   bundle exec fastlane match adhoc
+  #
+  # Run:
+  #   bundle exec fastlane beta_dev
+  # ---------------------------------------------------------------------------
+  lane :beta_dev do
+    match(type: "adhoc", readonly: true)
+
+    increment_build_number(
+      build_number: Time.now.strftime("%Y%m%d%H%M"),
+      xcodeproj: "flixr.xcodeproj"
+    )
+
+    build_app(
+      workspace: "flixr.xcworkspace",
+      scheme: "flixr",
+      configuration: "Debug",
+      export_method: "ad-hoc",
+      export_options: {
+        provisioningProfiles: {
+          "vitrumlabs.flixr" => "match AdHoc vitrumlabs.flixr"
+        }
+      },
+      output_directory: "build",
+      output_name: "flixr-dev.ipa",
+      clean: true,
+      disable_xcpretty: true
+    )
+
+    firebase_app_distribution(
+      app: "1:326402391581:ios:513476a69fd723f63dd0f4",
+      groups: "internal-testers",
+      release_notes: "Dev build — Firebase dev environment"
     )
 
     clean_build_artifacts
@@ -54,14 +107,56 @@ platform :ios do
   #   bundle exec fastlane release build:<build_number>
   # ---------------------------------------------------------------------------
   lane :release do |options|
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+      key_filepath: ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"]
+    )
+
     deliver(
+      api_key: api_key,
       build_number: options[:build],
       submit_for_review: true,
       automatic_release: false,
       force: true,
-      skip_screenshots: true,
-      skip_metadata: false
+      skip_screenshots: false,
+      skip_metadata: false,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_uses_idfa: false
+      }
     )
+  end
+
+  lane :upload_metadata do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+      key_filepath: ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"]
+    )
+
+    deliver(
+      api_key: api_key,
+      skip_screenshots: true,
+      skip_binary_upload: true,
+      skip_metadata: false,
+      force: true,
+      precheck_include_in_app_purchases: false
+    )
+  end
+
+  # ---------------------------------------------------------------------------
+  # screenshots — captures App Store screenshots on simulators.
+  #
+  # Prerequisites (one-time):
+  #   1. Create a test Firebase account (email/password) in Firebase Console dev project
+  #   2. Set env vars: SNAPSHOT_TEST_EMAIL and SNAPSHOT_TEST_PASSWORD
+  #
+  # Run:
+  #   SNAPSHOT_TEST_EMAIL=you@example.com SNAPSHOT_TEST_PASSWORD=secret bundle exec fastlane screenshots
+  # ---------------------------------------------------------------------------
+  lane :screenshots do
+    snapshot
   end
 
   # ---------------------------------------------------------------------------

@@ -37,7 +37,7 @@ struct flixrApp: App {
         #if DEBUG
         AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
         #else
-        AppCheck.setAppCheckProviderFactory(AppAttestProviderFactory())
+        AppCheck.setAppCheckProviderFactory(DeviceCheckProviderFactory())
         #endif
         FirebaseApp.configure()
         MobileAds.shared.start()

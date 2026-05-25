@@ -130,13 +130,13 @@ final class UserLibrary {
     func saveNotifPrefs(_ prefs: NotificationPrefs) async {
         guard let uid else { return }
         notifPrefs = prefs
-        try? await db.collection("users").document(uid).setData([
+        try? await db.collection("users").document(uid).updateData([
             "notificationPrefs": [
                 "newRecommendations": prefs.newRecommendations,
                 "watchlistReminders": prefs.watchlistReminders,
                 "weeklyDigest":       prefs.weeklyDigest,
             ]
-        ], merge: true)
+        ])
     }
 
     // MARK: - Watchlist

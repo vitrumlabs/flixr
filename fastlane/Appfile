@@ -1,5 +1,5 @@
 app_identifier "vitrumlabs.flixr"
-apple_id "info@vitrumlabs.com"
+apple_id "kingan@tcd.ie"
 team_id "Z2FJU6P53W"
 
 # App Store Connect API key — avoids 2FA prompts in CI and local runs.

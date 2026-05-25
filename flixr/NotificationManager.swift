@@ -5,6 +5,8 @@ import Observation
 import UIKit
 import UserNotifications
 
+private let fcmTokenField = "fcmToken"
+
 @Observable
 final class NotificationManager: NSObject {
     static let shared = NotificationManager()
@@ -61,7 +63,21 @@ final class NotificationManager: NSObject {
     func fetchAndSaveToken(for uid: String) async {
         do {
             let token = try await Messaging.messaging().token()
-            try? await db.collection("users").document(uid).setData(["fcmToken": token], merge: true)
+            let ref = db.collection("users").document(uid)
+            // onUserSignUp (Cloud Function) creates the doc asynchronously after sign-in.
+            // Use updateData — allowed by rules — and retry with backoff until doc exists.
+            for attempt in 0..<6 {
+                do {
+                    try await ref.updateData([fcmTokenField: token])
+                    return
+                } catch let err as NSError
+                    where err.domain == FirestoreErrorDomain
+                    && err.code == FirestoreErrorCode.Code.notFound.rawValue {
+                    guard attempt < 5 else { break }
+                    let delay = UInt64(pow(2.0, Double(attempt))) * 500_000_000
+                    try? await Task.sleep(nanoseconds: delay)
+                }
+            }
         } catch {
             print("[FCM] Token fetch failed: \(error.localizedDescription)")
         }
@@ -93,6 +109,6 @@ extension NotificationManager: MessagingDelegate {
     // Fired when the token refreshes — save the new token immediately
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let token = fcmToken, let uid = Auth.auth().currentUser?.uid else { return }
-        Task { try? await self.db.collection("users").document(uid).setData(["fcmToken": token], merge: true) }
+        Task { await self.fetchAndSaveToken(for: uid) }
     }
 }
