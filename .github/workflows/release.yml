@@ -1,0 +1,59 @@
+name: TestFlight
+
+# Builds Release configuration against prod Firebase and uploads to TestFlight.
+#
+# Required GitHub secrets:
+#   MATCH_PASSWORD                        — Match encryption passphrase (stored in 1Password)
+#   MATCH_GIT_BASIC_AUTHORIZATION         — base64 of "kingan@tcd.ie:<github_pat>" for ios-certs repo
+#   APP_STORE_CONNECT_API_KEY_KEY_ID      — ASC API key ID
+#   APP_STORE_CONNECT_API_KEY_ISSUER_ID   — ASC API key issuer ID
+#   APP_STORE_CONNECT_API_KEY_CONTENT     — Contents of the .p8 key file
+#   GOOGLE_SERVICE_INFO_PROD_BASE64       — base64-encoded Config/Release/GoogleService-Info.plist
+#
+# To encode the plist: base64 -i Config/Release/GoogleService-Info.plist | pbcopy
+
+on:
+  push:
+    branches: [release]
+  workflow_dispatch:
+
+jobs:
+  beta:
+    name: "Build & Upload to TestFlight"
+    runs-on: macos-latest
+    concurrency:
+      group: testflight
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Install CocoaPods dependencies
+        run: pod install
+
+      - name: Write App Store Connect API key
+        run: |
+          mkdir -p ~/.private_keys
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}" \
+            > ~/.private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}.p8
+
+      - name: Write prod GoogleService-Info.plist
+        run: |
+          mkdir -p Config/Release
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PROD_BASE64 }}" \
+            | base64 --decode > Config/Release/GoogleService-Info.plist
+
+      - name: Build & Upload to TestFlight
+        run: bundle exec fastlane beta
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY_FILEPATH: ~/.private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}.p8
