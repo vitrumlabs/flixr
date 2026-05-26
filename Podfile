@@ -3,6 +3,10 @@ platform :ios, '17.0'
 target 'flixr' do
   use_frameworks!
 
+  target 'flixrTests' do
+    inherit! :search_paths
+  end
+
   pod 'FirebaseAuth'
   pod 'FirebaseAnalytics'
   pod 'FirebaseFirestore'

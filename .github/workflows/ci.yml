@@ -25,13 +25,26 @@ jobs:
       - name: Install CocoaPods dependencies
         run: pod install --repo-update
 
+      - name: Select simulator
+        run: |
+          UDID=$(xcrun simctl list -j devices available | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)['devices']
+          for runtime in sorted(d.keys(), reverse=True):
+            for dev in d[runtime]:
+              if 'iPhone' in dev.get('name','') and dev.get('isAvailable', False):
+                print(dev['udid'])
+                exit()
+          ")
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+
       - name: Run unit tests
         run: |
           set -o pipefail
           xcodebuild test \
             -workspace flixr.xcworkspace \
             -scheme flixr \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -destination "id=$SIM_UDID" \
             -only-testing:flixrTests \
             -resultBundlePath TestResults \
             | xcpretty --color
