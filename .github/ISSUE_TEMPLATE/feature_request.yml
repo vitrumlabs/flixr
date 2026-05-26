@@ -1,0 +1,46 @@
+name: Feature Request
+description: Propose a new feature or improvement for the Flixr iOS app
+title: "[Feature] "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: user_story
+    attributes:
+      label: User story
+      description: "As a [user], I want [goal], so that [benefit]"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 – Critical
+        - P1 – High
+        - P2 – Medium
+        - P3 – Low
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Discovery / Swipe deck
+        - Mood search
+        - Watchlist
+        - Notifications
+        - Auth / Onboarding
+        - Settings
+        - Other
+    validations:
+      required: true
