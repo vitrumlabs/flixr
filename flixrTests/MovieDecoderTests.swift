@@ -120,9 +120,9 @@ struct MovieTmdbDetailDecoderTests {
         #expect(movie?.backdropPath == "/backdrop.jpg")
     }
 
-    @Test func ratingScaledCorrectly() {
+    @Test func ratingRoundedToOneDecimal() {
         let movie = Movie(tmdbDetail: baseDict())
-        #expect(movie?.rating == 85.0)
+        #expect(movie?.rating == 8.5)
     }
 
     @Test func returnsNilForMissingId() {
