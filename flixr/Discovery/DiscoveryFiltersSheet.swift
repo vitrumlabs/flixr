@@ -10,23 +10,26 @@ struct DiscoveryFiltersSheet: View {
     @State private var selectedDecade: String?
     @State private var selectedSort: String
     @State private var minRating: Double
+    @State private var selectedCertifications: Set<String>
 
-    private let genres     = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "History", "Horror", "Music", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
-    private let decades    = ["2020s", "2010s", "2000s", "90s", "80s", "Older"]
-    private let sortLabels = ["Popular", "Top Rated", "Newest", "Blockbusters"]
+    private let genres         = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "History", "Horror", "Music", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
+    private let decades        = ["2020s", "2010s", "2000s", "90s", "80s", "Older"]
+    private let sortLabels     = ["Popular", "Top Rated", "Newest", "Blockbusters"]
+    private let certifications = ["G", "PG", "PG-13", "R", "NC-17"]
 
     init(initialFilters: MovieFilters, onApply: @escaping (MovieFilters) -> Void, onClose: @escaping () -> Void) {
         self.onApply = onApply
         self.onClose = onClose
-        _selectedGenres = State(initialValue: initialFilters.genres)
-        _selectedDecade = State(initialValue: initialFilters.decade)
-        _selectedSort   = State(initialValue: initialFilters.sortBy)
-        _minRating      = State(initialValue: initialFilters.minRating / 10)
+        _selectedGenres        = State(initialValue: initialFilters.genres)
+        _selectedDecade        = State(initialValue: initialFilters.decade)
+        _selectedSort          = State(initialValue: initialFilters.sortBy)
+        _minRating             = State(initialValue: initialFilters.minRating / 10)
+        _selectedCertifications = State(initialValue: initialFilters.certifications)
     }
 
     private var currentFilters: MovieFilters {
         MovieFilters(genres: selectedGenres, decade: selectedDecade, sortBy: selectedSort,
-                     minRating: minRating * 10)
+                     minRating: minRating * 10, certifications: selectedCertifications)
     }
 
     var body: some View {
@@ -59,6 +62,7 @@ struct DiscoveryFiltersSheet: View {
                             selectedDecade = nil
                             selectedSort = "Popular"
                             minRating = 0
+                            selectedCertifications = []
                         }
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.flxRed)
@@ -86,6 +90,22 @@ struct DiscoveryFiltersSheet: View {
                                     FilterChip(label: decade, isActive: decade == selectedDecade) {
                                         selectedDecade = (selectedDecade == decade) ? nil : decade
                                     }
+                                }
+                            }
+
+                            FilterSection(title: "Rating") {
+                                FlexChips(items: certifications) { cert in
+                                    FilterChip(
+                                        label: cert,
+                                        isActive: selectedCertifications.contains(cert),
+                                        action: {
+                                            if selectedCertifications.contains(cert) {
+                                                selectedCertifications.remove(cert)
+                                            } else {
+                                                selectedCertifications.insert(cert)
+                                            }
+                                        }
+                                    )
                                 }
                             }
 

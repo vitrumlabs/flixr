@@ -7,9 +7,10 @@ struct MovieFilters: Equatable {
     var decade: String? = nil
     var sortBy: String = "Popular"
     var minRating: Double = 0
+    var certifications: Set<String> = []
 
     var isActive: Bool {
-        !genres.isEmpty || decade != nil || sortBy != "Popular" || minRating > 0
+        !genres.isEmpty || decade != nil || sortBy != "Popular" || minRating > 0 || !certifications.isEmpty
     }
 
     static let `default` = MovieFilters()
