@@ -27,10 +27,11 @@ jobs:
 
       - name: Run unit tests
         run: |
+          set -o pipefail
           xcodebuild test \
             -workspace flixr.xcworkspace \
             -scheme flixr \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -only-testing:flixrTests \
             -resultBundlePath TestResults \
             | xcpretty --color
