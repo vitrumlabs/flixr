@@ -133,6 +133,9 @@ struct MovieService {
         if let decade = filters.decade {
             payload["decade"] = decade
         }
+        if !filters.certifications.isEmpty {
+            payload["certifications"] = Array(filters.certifications)
+        }
         let result = try await functions.httpsCallable("discoverMovies").call(payload)
         let root = result.data as? [String: Any] ?? [:]
         let results = root["results"] as? [[String: Any]] ?? []
@@ -249,7 +252,7 @@ extension Movie {
         self.genres      = genreNames
         self.tag         = Self.tag(popularity: pop, votes: votes)
         self.rating      = ((d["vote_average"] as? Double ?? 0) * 10).rounded() / 10
-        self.cert        = ""
+        self.cert        = d["cert"] as? String ?? ""
         self.releaseDate = Self.formatDate(rawDate)
         self.director    = director
         self.studio      = studio
