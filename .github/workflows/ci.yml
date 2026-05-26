@@ -27,15 +27,23 @@ jobs:
 
       - name: Select simulator
         run: |
-          UDID=$(xcrun simctl list -j devices available | python3 -c "
+          find_sim() {
+            xcrun simctl list -j | python3 -c "
           import sys, json
-          d = json.load(sys.stdin)['devices']
-          for runtime in sorted(d.keys(), reverse=True):
-            for dev in d[runtime]:
-              if 'iPhone' in dev.get('name','') and dev.get('isAvailable', False):
-                print(dev['udid'])
-                exit()
-          ")
+          data = json.load(sys.stdin)
+          installed = {r['identifier'] for r in data.get('runtimes', []) if r.get('isAvailable', False)}
+          for rt in sorted(installed, reverse=True):
+            for dev in data.get('devices', {}).get(rt, []):
+              if 'iPhone' in dev.get('name', '') and dev.get('isAvailable', False):
+                print(dev['udid']); exit(0)
+          exit(1)
+          "
+          }
+          UDID=$(find_sim) || {
+            echo "No installed runtime found — downloading iOS platform..."
+            xcodebuild -downloadPlatform iOS
+            UDID=$(find_sim)
+          }
           echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
 
       - name: Run unit tests
