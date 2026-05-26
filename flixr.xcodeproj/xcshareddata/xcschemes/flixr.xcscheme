@@ -35,6 +35,17 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "46B640F12FACA4C400E34B1A"
+               BuildableName = "flixrTests.xctest"
+               BlueprintName = "flixrTests"
+               ReferencedContainer = "container:flixr.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "46B640FB2FACA4C400E34B1A"
                BuildableName = "flixrUITests.xctest"
                BlueprintName = "flixrUITests"
