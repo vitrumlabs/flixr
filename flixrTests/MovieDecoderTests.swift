@@ -33,25 +33,9 @@ struct MovieFiltersTests {
         #expect(f.isActive)
     }
 
-    @Test func activeWhenCertificationSelected() {
-        var f = MovieFilters()
-        f.certifications = ["PG-13"]
-        #expect(f.isActive)
-    }
-
     @Test func notActiveWhenAllDefault() {
-        let f = MovieFilters(genres: [], decade: nil, sortBy: "Popular", minRating: 0, certifications: [])
+        let f = MovieFilters(genres: [], decade: nil, sortBy: "Popular", minRating: 0)
         #expect(f.isActive == false)
-    }
-
-    @Test func equalityIncludesCertifications() {
-        var a = MovieFilters()
-        var b = MovieFilters()
-        a.certifications = ["R"]
-        b.certifications = ["PG-13"]
-        #expect(a != b)
-        b.certifications = ["R"]
-        #expect(a == b)
     }
 }
 
