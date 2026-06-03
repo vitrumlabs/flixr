@@ -146,12 +146,6 @@ struct DiscoverSwipeScreen: View {
             adLoader.loadNext()
             Task { await deck.loadMovies(filters: newFilters) }
         }
-        // Remote Config may not have resolved adUnitID when the view first appeared,
-        // causing the initial loadNext() to bail out. Retry as soon as the ID arrives.
-        .onChange(of: remoteConfig.adUnitID) { _, newID in
-            guard !newID.isEmpty, adLoader.ad == nil else { return }
-            adLoader.loadNext()
-        }
     }
 
     // MARK: - Deck management

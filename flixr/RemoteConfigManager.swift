@@ -26,7 +26,6 @@ final class RemoteConfigManager {
         #endif
         rc.configSettings = settings
         rc.setDefaults([
-            "ad_unit_id":    Self.defaultAdUnitID as NSObject,
             "swipes_per_ad": 8 as NSObject,
             "ads_enabled":   true as NSObject,
         ])
@@ -34,7 +33,8 @@ final class RemoteConfigManager {
 
     func fetchAndActivate() async {
         _ = try? await rc.fetchAndActivate()
-        adUnitID    = rc["ad_unit_id"].stringValue
+        // adUnitID is intentionally not read from Remote Config —
+        // the compile-time #if DEBUG default is always correct.
         swipesPerAd = max(1, rc["swipes_per_ad"].numberValue.intValue)
         adsEnabled  = rc["ads_enabled"].boolValue
     }
