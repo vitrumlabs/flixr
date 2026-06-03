@@ -1,7 +1,7 @@
 name: Bug Report
 description: Report a crash, regression, or unexpected behavior in the Flixr iOS app
 title: "[Bug] "
-labels: ["bug"]
+labels: ["type:bug"]
 body:
   - type: textarea
     id: description
