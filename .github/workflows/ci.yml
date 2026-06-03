@@ -1,3 +1,6 @@
+# Unit tests are run by Xcode Cloud, not GitHub Actions.
+# See ci_scripts/ci_post_clone.sh for the post-clone hook that installs CocoaPods.
+# Configure the Xcode Cloud workflow in App Store Connect → Xcode Cloud.
 name: CI
 
 on:
@@ -5,25 +8,9 @@ on:
     branches: [main, develop]
 
 jobs:
-  test:
-    name: "Unit Tests"
-    runs-on: macos-15
-
+  placeholder:
+    name: "CI (Xcode Cloud)"
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.3.app
-
-      - name: Cache CocoaPods
-        uses: actions/cache@v4
-        with:
-          path: Pods
-          key: pods-${{ hashFiles('Podfile.lock') }}
-          restore-keys: pods-
-
-      - name: Install CocoaPods dependencies
-        run: pod install --repo-update
-
-      - name: Run unit tests
-        run: echo "TODO - simulator setup issues on macos-15 runner, fix later"
+      - name: Tests run on Xcode Cloud
+        run: echo "Unit tests are handled by Xcode Cloud. See App Store Connect for build status."
