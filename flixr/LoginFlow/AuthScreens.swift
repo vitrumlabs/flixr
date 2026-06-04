@@ -14,6 +14,7 @@ struct SignInScreen: View {
     @State private var email: String
     @State private var password = ""
     @State private var showPassword = false
+    @State private var activeLegal: LegalDestination? = nil
 
     init(
         go: @escaping (LoginScreen) -> Void,
@@ -108,6 +109,16 @@ struct SignInScreen: View {
                 .padding(.top, 12)
                 .padding(.bottom, 32)
             }
+            .safeAreaInset(edge: .bottom) {
+                LegalConsentFooter(activeLegal: $activeLegal)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+            }
+            .sheet(item: $activeLegal) { dest in
+                SafariView(url: dest.url)
+                    .ignoresSafeArea()
+            }
         }
     }
 }
@@ -127,6 +138,7 @@ struct SignUpScreen: View {
     @State private var email: String
     @State private var password = ""
     @State private var showPassword = false
+    @State private var activeLegal: LegalDestination? = nil
 
     init(
         go: @escaping (LoginScreen) -> Void,
@@ -224,6 +236,16 @@ struct SignUpScreen: View {
                 .padding(.top, 12)
                 .padding(.bottom, 32)
             }
+            .safeAreaInset(edge: .bottom) {
+                LegalConsentFooter(activeLegal: $activeLegal)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+            }
+            .sheet(item: $activeLegal) { dest in
+                SafariView(url: dest.url)
+                    .ignoresSafeArea()
+            }
         }
     }
 }
@@ -233,7 +255,6 @@ struct SignUpScreen: View {
 struct SocialAuthButtons: View {
     var go: (LoginScreen) -> Void
     @Environment(AuthManager.self) private var auth
-    @State private var activeLegal: LegalDestination? = nil
 
     var body: some View {
         VStack(spacing: 10) {
@@ -265,13 +286,6 @@ struct SocialAuthButtons: View {
                     if auth.user != nil { go(.mainApp) }
                 }
             }
-
-            LegalConsentFooter(activeLegal: $activeLegal)
-                .padding(.top, 4)
-        }
-        .sheet(item: $activeLegal) { dest in
-            SafariView(url: dest.url)
-                .ignoresSafeArea()
         }
     }
 }
