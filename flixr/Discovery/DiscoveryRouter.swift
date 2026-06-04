@@ -1,5 +1,4 @@
 import SwiftUI
-import AppTrackingTransparency
 import FirebaseAnalytics
 
 // MARK: - Per-tab navigation state
@@ -29,47 +28,53 @@ struct DiscoveryFlowView: View {
     @State private var showFilters = false
     @State private var showProfile = false
     @State private var activeFilters = MovieFilters.default
+    @State private var showPermissionGate = !PermissionGateView.hasBeenSeen
 
     var body: some View {
-        TabView(selection: $activeTab) {
-            Tab("Discover", systemImage: "movieclapper", value: DiscoverTab.discover) {
-                discoverTab
-                    .toolbar(discoverNav != .swipe || showFilters ? .hidden : .visible, for: .tabBar)
+        ZStack {
+            TabView(selection: $activeTab) {
+                Tab("Discover", systemImage: "movieclapper", value: DiscoverTab.discover) {
+                    discoverTab
+                        .toolbar(discoverNav != .swipe || showFilters ? .hidden : .visible, for: .tabBar)
+                }
+                Tab("Mood", systemImage: "theatermasks", value: DiscoverTab.mood) {
+                    moodTab
+                        .toolbar(moodMovie != nil ? .hidden : .visible, for: .tabBar)
+                }
+                Tab("Watchlist", systemImage: "bookmark", value: DiscoverTab.watchlist) {
+                    watchlistTab
+                        .toolbar(watchlistNav != .list ? .hidden : .visible, for: .tabBar)
+                }
+                Tab("Search", systemImage: "magnifyingglass", value: DiscoverTab.search, role: .search) {
+                    searchTab
+                }
             }
-            Tab("Mood", systemImage: "theatermasks", value: DiscoverTab.mood) {
-                moodTab
-                    .toolbar(moodMovie != nil ? .hidden : .visible, for: .tabBar)
+            .tint(.flxRed)
+            .preferredColorScheme(.dark)
+            .sheet(isPresented: $showProfile) {
+                ProfileView()
             }
-            Tab("Watchlist", systemImage: "bookmark", value: DiscoverTab.watchlist) {
-                watchlistTab
-                    .toolbar(watchlistNav != .list ? .hidden : .visible, for: .tabBar)
+            .onChange(of: notifManager.pendingMovieID) { _, movieID in
+                guard let movieID else { return }
+                notifManager.consumePendingMovieID()
+                activeTab = .discover
+                Task {
+                    guard let movie = try? await MovieService.shared.fetchDetails(id: movieID) else { return }
+                    withAnimation { discoverNav = .detail(movie) }
+                }
             }
-            Tab("Search", systemImage: "magnifyingglass", value: DiscoverTab.search, role: .search) {
-                searchTab
+
+            if showPermissionGate {
+                PermissionGateView {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        showPermissionGate = false
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(100)
             }
         }
-        .tint(.flxRed)
-        .preferredColorScheme(.dark)
-        .sheet(isPresented: $showProfile) {
-            ProfileView()
-        }
-        .task {
-            // ATT must be requested before the first ad impression.
-            // Small delay lets the UI settle so the system prompt doesn't
-            // appear over the launch animation.
-            guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
-            try? await Task.sleep(for: .seconds(1))
-            await ATTrackingManager.requestTrackingAuthorization()
-        }
-        .onChange(of: notifManager.pendingMovieID) { _, movieID in
-            guard let movieID else { return }
-            notifManager.consumePendingMovieID()
-            activeTab = .discover
-            Task {
-                guard let movie = try? await MovieService.shared.fetchDetails(id: movieID) else { return }
-                withAnimation { discoverNav = .detail(movie) }
-            }
-        }
+        .animation(.easeInOut(duration: 0.35), value: showPermissionGate)
     }
 
     // MARK: Mood tab
