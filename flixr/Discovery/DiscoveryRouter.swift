@@ -190,7 +190,7 @@ struct DiscoveryFlowView: View {
                     }
                 )
                 .navigationTitle("Search")
-                .searchable(text: $searchQuery, prompt: "Search by title...")
+                .searchable(text: $searchQuery, prompt: "Search title, actors, director…")
             }
 
             if let movie = searchMovie {
