@@ -87,6 +87,19 @@ private struct MoodInputView: View {
             )
             .ignoresSafeArea()
 
+            if phase == .loading {
+                VStack(spacing: 20) {
+                    FlxSpinner()
+                    Text("Finding your movies…")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color.dFg3)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black.opacity(0.6).ignoresSafeArea())
+                .transition(.opacity)
+                .zIndex(1)
+            }
+
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
 
@@ -179,12 +192,8 @@ private struct MoodInputView: View {
 
                     Button(action: runSearch) {
                         HStack(spacing: 8) {
-                            if phase == .loading {
-                                ProgressView().tint(.white).scaleEffect(0.85)
-                            } else {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 16, weight: .semibold))
-                            }
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16, weight: .semibold))
                             Text("Find my movie")
                                 .font(.system(size: 17, weight: .bold))
                         }
