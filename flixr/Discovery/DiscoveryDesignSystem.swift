@@ -102,10 +102,9 @@ struct PosterArt: View {
             guard let url = posterURL, url != loadingURL else { return }
             loadingURL = url
             loadedImage = nil
-            if let (data, _) = try? await URLSession.shared.data(from: url),
-               let uiImage = UIImage(data: data) {
-                loadedImage = Image(uiImage: uiImage)
-            }
+            guard let (data, _) = try? await URLSession.shared.data(from: url),
+                  let uiImage = UIImage(data: data) else { return }
+            await MainActor.run { loadedImage = Image(uiImage: uiImage) }
         }
     }
 }
