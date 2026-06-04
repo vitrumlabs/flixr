@@ -88,6 +88,7 @@ struct PosterArt: View {
                     ProceduralPoster(movie: movie, width: width)
                 }
             }
+            .id(url)
             .frame(width: width, height: width * 1.5)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
