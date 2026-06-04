@@ -103,17 +103,13 @@ struct SignInScreen: View {
                         go(.signinLoading)
                     }
 
-                    Spacer(minLength: 40)
+                    Spacer().frame(height: 32)
+                    LegalConsentFooter(activeLegal: $activeLegal)
+                    Spacer(minLength: 24)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
                 .padding(.bottom, 32)
-            }
-            .safeAreaInset(edge: .bottom) {
-                LegalConsentFooter(activeLegal: $activeLegal)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(.ultraThinMaterial)
             }
             .sheet(item: $activeLegal) { dest in
                 SafariView(url: dest.url)
@@ -230,17 +226,13 @@ struct SignUpScreen: View {
                         go(emailExists ? .signup : .signupLoading)
                     }
 
-                    Spacer(minLength: 40)
+                    Spacer().frame(height: 32)
+                    LegalConsentFooter(activeLegal: $activeLegal)
+                    Spacer(minLength: 24)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
                 .padding(.bottom, 32)
-            }
-            .safeAreaInset(edge: .bottom) {
-                LegalConsentFooter(activeLegal: $activeLegal)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(.ultraThinMaterial)
             }
             .sheet(item: $activeLegal) { dest in
                 SafariView(url: dest.url)
