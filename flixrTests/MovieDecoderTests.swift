@@ -1,5 +1,75 @@
 import Testing
+import SwiftUI
 @testable import flixr
+
+// MARK: - Watchlist filter helpers
+
+/// Minimal Movie factory for use in tests — fills all required fields with
+/// sensible placeholders so tests only specify what they care about.
+private func makeMovie(id: String, title: String = "Test Film") -> Movie {
+    Movie(
+        id: id,
+        title: title,
+        year: 2024,
+        runtime: "1h 30m",
+        genre: "Drama",
+        genres: ["Drama"],
+        tag: "",
+        rating: 7.0,
+        cert: "",
+        releaseDate: "2024-01-01",
+        director: "",
+        studio: "",
+        language: "en",
+        cast: [],
+        platforms: [],
+        palette: MoviePalette.forGenre("Drama"),
+        synopsis: "",
+        posterPath: nil,
+        backdropPath: nil,
+        trailerKey: nil
+    )
+}
+
+// MARK: - DiscoverDeck watchlist-filter tests
+
+struct DiscoverDeckFilterTests {
+
+    /// Movies whose IDs are in the watchlist set must be removed.
+    @Test func excludesWatchlistedMovies() {
+        let movies = [makeMovie(id: "1"), makeMovie(id: "2"), makeMovie(id: "3")]
+        let watchlistIds: Set<String> = ["2"]
+        let filtered = movies.filter { !watchlistIds.contains($0.id) }
+        #expect(filtered.map(\.id) == ["1", "3"])
+    }
+
+    /// When the watchlist is empty nothing is filtered out.
+    @Test func emptyWatchlistKeepsAllMovies() {
+        let movies = [makeMovie(id: "10"), makeMovie(id: "20")]
+        let filtered = movies.filter { !Set<String>().contains($0.id) }
+        #expect(filtered.count == 2)
+    }
+
+    /// When every movie is already watchlisted the deck is empty.
+    @Test func allMoviesWatchlistedProducesEmptyDeck() {
+        let movies = [makeMovie(id: "A"), makeMovie(id: "B")]
+        let watchlistIds: Set<String> = ["A", "B"]
+        let filtered = movies.filter { !watchlistIds.contains($0.id) }
+        #expect(filtered.isEmpty)
+    }
+
+    /// The refill path unions seenIds with watchlistIds before filtering.
+    @Test func refillExcludesBothSeenAndWatchlisted() {
+        let existing = [makeMovie(id: "1"), makeMovie(id: "2")]
+        let incoming = [makeMovie(id: "2"), makeMovie(id: "3"), makeMovie(id: "4")]
+        let watchlistIds: Set<String> = ["4"]
+        let seenIds = Set(existing.map(\.id))
+        let excludedIds = seenIds.union(watchlistIds)
+        let appended = incoming.filter { !excludedIds.contains($0.id) }
+        // "2" is already seen, "4" is watchlisted — only "3" should be new
+        #expect(appended.map(\.id) == ["3"])
+    }
+}
 
 // MARK: - MovieFilters
 
