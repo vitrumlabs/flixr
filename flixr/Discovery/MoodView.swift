@@ -95,7 +95,7 @@ private struct MoodInputView: View {
                         .foregroundColor(Color.dFg3)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black.opacity(0.6).ignoresSafeArea())
+                .background(Color.black.ignoresSafeArea())
                 .transition(.opacity)
                 .zIndex(1)
             }
