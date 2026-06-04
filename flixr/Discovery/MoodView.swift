@@ -15,6 +15,19 @@ private let moodPresets: [String] = [
     "Need a good laugh",
 ]
 
+private let moodSymbols: [String: String] = [
+    "Hype me up":              "bolt.fill",
+    "Spaghetti western":       "star.fill",
+    "Something to cry to":     "drop.fill",
+    "Space thriller":          "moon.stars.fill",
+    "Mind-bending thriller":   "waveform.path.ecg",
+    "Cozy & warm":             "cup.and.heat.waves.fill",
+    "I'm stressed, distract me": "figure.walk",
+    "Pirate adventure":        "sailboat.fill",
+    "Dark & intense":          "cloud.bolt.fill",
+    "Need a good laugh":       "face.smiling.fill",
+]
+
 // MARK: - Entry: owns input ↔ results navigation
 
 struct MoodView: View {
@@ -57,9 +70,9 @@ private struct MoodInputView: View {
 
     private enum Phase { case idle, loading, error }
 
-    private let chipColumns = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10),
+    private let cardColumns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
     ]
 
     private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
@@ -74,10 +87,22 @@ private struct MoodInputView: View {
             )
             .ignoresSafeArea()
 
+            if phase == .loading {
+                VStack(spacing: 20) {
+                    FlxSpinner()
+                    Text("Finding your movies…")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color.dFg3)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black.ignoresSafeArea())
+                .transition(.opacity)
+                .zIndex(1)
+            }
+
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
 
-                    // Header
                     VStack(alignment: .leading, spacing: 8) {
                         Text("What's the\nmood tonight?")
                             .font(.flxDisplay(36))
@@ -90,7 +115,6 @@ private struct MoodInputView: View {
                     .padding(.top, 20)
                     .padding(.bottom, 24)
 
-                    // Text area
                     HStack(alignment: .top) {
                         TextField(
                             "e.g. 'something feel-good to watch with a friend'",
@@ -133,7 +157,6 @@ private struct MoodInputView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 24)
 
-                    // "Or pick a mood" label
                     Text("Or pick a mood")
                         .font(.system(size: 11, weight: .bold))
                         .tracking(1.4)
@@ -142,30 +165,17 @@ private struct MoodInputView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 14)
 
-                    // Preset chips — glass controls, shared sampling region
-                    GlassEffectContainer(spacing: 10) {
-                        LazyVGrid(columns: chipColumns, spacing: 10) {
-                            ForEach(moodPresets, id: \.self) { preset in
-                                let isSelected = query == preset
-                                Button(action: {
+                    LazyVGrid(columns: cardColumns, spacing: 12) {
+                        ForEach(moodPresets, id: \.self) { preset in
+                            MoodCard(
+                                preset: preset,
+                                isSelected: query == preset,
+                                onTap: {
                                     withAnimation(.bouncy) { query = preset }
                                     inputFocused = false
-                                }) {
-                                    Text(preset)
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(isSelected ? .white : Color.dFg2)
-                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                                        .padding(.horizontal, 14)
+                                    runSearch()
                                 }
-                                .buttonStyle(.plain)
-                                .glassEffect(
-                                    (isSelected
-                                        ? Glass.regular.tint(.flxRed)
-                                        : .regular
-                                    ).interactive(),
-                                    in: Capsule()
-                                )
-                            }
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
@@ -180,15 +190,10 @@ private struct MoodInputView: View {
                             .padding(.bottom, 16)
                     }
 
-                    // "Find my movie" CTA — inline, stays put when keyboard opens
                     Button(action: runSearch) {
                         HStack(spacing: 8) {
-                            if phase == .loading {
-                                ProgressView().tint(.white).scaleEffect(0.85)
-                            } else {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 16, weight: .semibold))
-                            }
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16, weight: .semibold))
                             Text("Find my movie")
                                 .font(.system(size: 17, weight: .bold))
                         }
@@ -198,10 +203,17 @@ private struct MoodInputView: View {
                         .background(
                             canSearch
                                 ? LinearGradient(
-                                    colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
+                                    colors: [
+                                        Color(hex: "F11823"),
+                                        Color(hex: "E50914"),
+                                        Color(hex: "C8060F"),
+                                    ],
                                     startPoint: .top, endPoint: .bottom)
                                 : LinearGradient(
-                                    colors: [Color.white.opacity(0.12), Color.white.opacity(0.08)],
+                                    colors: [
+                                        Color.white.opacity(0.12),
+                                        Color.white.opacity(0.08),
+                                    ],
                                     startPoint: .top, endPoint: .bottom)
                         )
                         .clipShape(Capsule())
@@ -230,5 +242,58 @@ private struct MoodInputView: View {
                 phase = .error
             }
         }
+    }
+}
+
+// MARK: - Mood card
+
+private struct MoodCard: View {
+    let preset: String
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    private var symbol: String {
+        moodSymbols[preset] ?? "film"
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 10) {
+                Image(systemName: symbol)
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(
+                        isSelected
+                            ? AnyShapeStyle(Color.flxRed)
+                            : AnyShapeStyle(Color.dFg2)
+                    )
+                    .frame(width: 44, height: 44)
+
+                Text(preset)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(isSelected ? .white : Color.dFg2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .padding(.horizontal, 12)
+            .background(
+                isSelected
+                    ? Color.flxRed.opacity(0.12)
+                    : Color.white.opacity(0.05)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(
+                        isSelected ? Color.flxRed.opacity(0.55) : Color.dLine,
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(ScaleButtonStyle(scale: 0.96))
+        .accessibilityLabel(preset)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
