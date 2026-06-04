@@ -78,23 +78,34 @@ struct PosterArt: View {
     var movie: Movie
     var width: CGFloat = 80
 
+    @State private var loadedImage: Image?
+    @State private var loadingURL: URL?
+
+    private var posterURL: URL? {
+        guard let path = movie.posterPath else { return nil }
+        return TMDBImage.posterURL(path, width: 342)
+    }
+
     var body: some View {
-        if let path = movie.posterPath, let url = TMDBImage.posterURL(path, width: 342) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable().scaledToFill()
-                default:
-                    ProceduralPoster(movie: movie, width: width)
-                }
+        ZStack {
+            if let image = loadedImage {
+                image.resizable().scaledToFill()
+            } else {
+                ProceduralPoster(movie: movie, width: width)
             }
-            .id(url)
-            .frame(width: width, height: width * 1.5)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
-            .shadow(color: .black.opacity(0.55), radius: 12, y: 5)
-        } else {
-            ProceduralPoster(movie: movie, width: width)
+        }
+        .frame(width: width, height: width * 1.5)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
+        .shadow(color: .black.opacity(0.55), radius: 12, y: 5)
+        .task(id: posterURL) {
+            guard let url = posterURL, url != loadingURL else { return }
+            loadingURL = url
+            loadedImage = nil
+            if let (data, _) = try? await URLSession.shared.data(from: url),
+               let uiImage = UIImage(data: data) {
+                loadedImage = Image(uiImage: uiImage)
+            }
         }
     }
 }
