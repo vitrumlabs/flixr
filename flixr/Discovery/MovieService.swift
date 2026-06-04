@@ -122,6 +122,16 @@ struct MovieService {
         return items.compactMap { Movie(moodResult: $0) }
     }
 
+    func recommendations(watchlistIds: [String], seenIds: [String], count: Int = 10) async throws -> [Movie] {
+        let result = try await functions.httpsCallable("getRecommendations").call([
+            "watchlistIds": watchlistIds,
+            "seenIds": seenIds,
+            "count": count,
+        ])
+        let items = result.data as? [[String: Any]] ?? []
+        return items.compactMap { Movie(tmdb: $0) }
+    }
+
     func discover(filters: MovieFilters, page: Int = 1) async throws -> [Movie] {
         var payload: [String: Any] = [
             "page": page,
