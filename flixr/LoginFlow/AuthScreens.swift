@@ -1,4 +1,5 @@
 import SwiftUI
+import SafariServices
 
 // MARK: - Sign In
 
@@ -232,6 +233,7 @@ struct SignUpScreen: View {
 struct SocialAuthButtons: View {
     var go: (LoginScreen) -> Void
     @Environment(AuthManager.self) private var auth
+    @State private var activeLegal: LegalDestination? = nil
 
     var body: some View {
         VStack(spacing: 10) {
@@ -263,6 +265,38 @@ struct SocialAuthButtons: View {
                     if auth.user != nil { go(.mainApp) }
                 }
             }
+
+            LegalConsentFooter(activeLegal: $activeLegal)
+                .padding(.top, 4)
         }
+        .sheet(item: $activeLegal) { dest in
+            SafariView(url: dest.url)
+                .ignoresSafeArea()
+        }
+    }
+}
+
+// MARK: - Legal consent footer
+
+struct LegalConsentFooter: View {
+    @Binding var activeLegal: LegalDestination?
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Text("By continuing, you agree to our ")
+                .foregroundColor(.fg3)
+            Button("Terms of Use") { activeLegal = .terms }
+                .foregroundColor(.fg2)
+                .underline()
+            Text(" and ")
+                .foregroundColor(.fg3)
+            Button("Privacy Policy") { activeLegal = .privacy }
+                .foregroundColor(.fg2)
+                .underline()
+        }
+        .font(.system(size: 12))
+        .buttonStyle(.plain)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
     }
 }
