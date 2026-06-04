@@ -11,6 +11,7 @@ final class DiscoverDeck {
     var isRefilling: Bool = false
 
     private var isLoadingMore: Bool = false
+    private var sessionLikeCount: Int = 0
 
     // MARK: - Initial load
 
@@ -71,7 +72,10 @@ final class DiscoverDeck {
         watchlistIds: [String],
         topGenres: [String]
     ) async {
-        guard !isLoadingMore else { return }
+        sessionLikeCount += 1
+        // Refresh every 3rd like — avoids overcorrecting on a short run of
+        // similar content (e.g. 2 animated swipes dominating the taste vector).
+        guard sessionLikeCount % 3 == 0, !isLoadingMore else { return }
         let seenIds = Set(movies.map(\.id))
         let excludeSet = seenIds.union(Set(watchlistIds))
         let fresh = (try? await fetchBatch(
