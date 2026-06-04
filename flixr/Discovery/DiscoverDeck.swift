@@ -14,69 +14,111 @@ final class DiscoverDeck {
 
     // MARK: - Initial load
 
-    func loadMovies(filters: MovieFilters, watchlistIds: Set<String> = []) async {
+    func loadMovies(
+        filters: MovieFilters,
+        watchlistIds: [String] = [],
+        topGenres: [String] = []
+    ) async {
         isLoading = true
         fetchError = false
         deckIndex = 0
         movies = []
+        let excludeSet = Set(watchlistIds)
         do {
-            let batch: [Movie]
-            if filters.isActive {
-                batch = try await MovieService.shared.discover(filters: filters, page: 1)
-            } else {
-                // Random starting page so each session feels fresh
-                let page = Int.random(in: 1...8)
-                batch = try await MovieService.shared.fetchPopular(page: page)
-            }
-            movies = Array(batch.filter { !watchlistIds.contains($0.id) }.shuffled().prefix(10))
+            var batch = try await fetchBatch(
+                filters: filters,
+                watchlistIds: watchlistIds,
+                topGenres: topGenres,
+                excludeIds: excludeSet
+            )
+            batch = batch.filter { !excludeSet.contains($0.id) }
+            movies = Array(batch.shuffled().prefix(10))
             isLoading = false
-            Task { await preloadTMDB(filters: filters, watchlistIds: watchlistIds, count: 2) }
         } catch {
             fetchError = true
             isLoading = false
         }
     }
 
-    // MARK: - Incremental TMDB load
+    // MARK: - Incremental refill (fires when deck runs low)
 
-    func refillIfNeeded(filters: MovieFilters, watchlistIds: Set<String> = []) async {
+    func refillIfNeeded(
+        filters: MovieFilters,
+        watchlistIds: [String] = [],
+        topGenres: [String] = []
+    ) async {
         let remaining = movies.count - deckIndex
-        guard remaining < 15, !isLoadingMore else { return }
+        guard remaining < 6, !isLoadingMore else { return }
         isLoadingMore = true
         isRefilling = true
         defer { isLoadingMore = false; isRefilling = false }
 
         let seenIds = Set(movies.map(\.id))
-        let excludedIds = seenIds.union(watchlistIds)
-        let more: [Movie]
-        if filters.isActive {
-            let nextPage = (movies.count / 20) + 1
-            more = (try? await MovieService.shared.discover(filters: filters, page: nextPage)) ?? []
-            movies.append(contentsOf: more.filter { !excludedIds.contains($0.id) })
-        } else {
-            // Random page each time — dedup via excludedIds handles any overlap
-            let page = Int.random(in: 1...20)
-            more = (try? await MovieService.shared.fetchPopular(page: page)) ?? []
-            movies.append(contentsOf: more.shuffled().filter { !excludedIds.contains($0.id) })
-        }
+        let excludeSet = seenIds.union(Set(watchlistIds))
+        let more = (try? await fetchBatch(
+            filters: filters,
+            watchlistIds: watchlistIds,
+            topGenres: topGenres,
+            excludeIds: excludeSet
+        )) ?? []
+        movies.append(contentsOf: more.filter { !excludeSet.contains($0.id) })
     }
 
-    // MARK: - Silent background preload
+    // MARK: - Post-like fetch (fires immediately after each right swipe)
 
-    private func preloadTMDB(filters: MovieFilters, watchlistIds: Set<String>, count: Int) async {
-        for _ in 0..<count {
-            let seenIds = Set(movies.map(\.id))
-            let excludedIds = seenIds.union(watchlistIds)
-            let more: [Movie]
-            if filters.isActive {
-                let nextPage = (movies.count / 20) + 1
-                more = (try? await MovieService.shared.discover(filters: filters, page: nextPage)) ?? []
-                movies.append(contentsOf: more.filter { !excludedIds.contains($0.id) })
-            } else {
-                let page = Int.random(in: 1...20)
-                more = (try? await MovieService.shared.fetchPopular(page: page)) ?? []
-                movies.append(contentsOf: more.shuffled().filter { !excludedIds.contains($0.id) })
+    func onLiked(
+        filters: MovieFilters,
+        watchlistIds: [String],
+        topGenres: [String]
+    ) async {
+        guard !isLoadingMore else { return }
+        let seenIds = Set(movies.map(\.id))
+        let excludeSet = seenIds.union(Set(watchlistIds))
+        let fresh = (try? await fetchBatch(
+            filters: filters,
+            watchlistIds: watchlistIds,
+            topGenres: topGenres,
+            excludeIds: excludeSet
+        )) ?? []
+        movies.append(contentsOf: fresh.filter { !excludeSet.contains($0.id) })
+    }
+
+    // MARK: - Routing
+
+    /// Fetches a batch using the best available source:
+    ///  1. watchlistIds non-empty → vector recommendations
+    ///     └ empty result → genre-matched discover (seamless fallback)
+    ///        └ no genres → popular
+    ///  2. filters active → discover
+    ///  3. otherwise → popular (random page)
+    private func fetchBatch(
+        filters: MovieFilters,
+        watchlistIds: [String],
+        topGenres: [String],
+        excludeIds: Set<String>
+    ) async throws -> [Movie] {
+        if !watchlistIds.isEmpty {
+            let recs = try await MovieService.shared.recommendations(
+                watchlistIds: watchlistIds,
+                seenIds: Array(excludeIds),
+                count: 20
+            )
+            if !recs.isEmpty { return recs }
+            // Recommendations exhausted — fall back to genre-matched discovery
+            if !topGenres.isEmpty {
+                let fallbackFilters = MovieFilters(genres: Set(topGenres.prefix(3)))
+                let page = Int.random(in: 1...10)
+                return (try? await MovieService.shared.discover(
+                    filters: fallbackFilters, page: page
+                )) ?? []
             }
+        }
+        if filters.isActive {
+            let page = (movies.count / 20) + 1
+            return try await MovieService.shared.discover(filters: filters, page: page)
+        } else {
+            let page = Int.random(in: 1...20)
+            return ((try? await MovieService.shared.fetchPopular(page: page)) ?? []).shuffled()
         }
     }
 }
