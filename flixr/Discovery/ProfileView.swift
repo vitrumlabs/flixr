@@ -385,8 +385,8 @@ enum LegalDestination: String, Identifiable {
 
     var url: URL {
         switch self {
-        case .terms:   return URL(string: "https://vitrumlabs.com/terms")!
-        case .privacy: return URL(string: "https://vitrumlabs.com/privacy")!
+        case .terms:   return URL(string: "https://vitrumlabs.com/flixr-terms.html")!
+        case .privacy: return URL(string: "https://vitrumlabs.com/flixr-privacy.html")!
         }
     }
 }
