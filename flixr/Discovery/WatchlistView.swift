@@ -134,6 +134,7 @@ private struct WatchlistRow: View {
         Button(action: action) {
             HStack(alignment: .center, spacing: 12) {
                 PosterArt(movie: movie, width: 72)
+                    .id(movie.id)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .top, spacing: 8) {
