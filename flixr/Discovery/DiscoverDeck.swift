@@ -105,10 +105,17 @@ final class DiscoverDeck {
             let recs = try await MovieService.shared.recommendations(
                 watchlistIds: watchlistIds,
                 seenIds: Array(excludeIds),
-                count: 20
+                count: 20,
+                filters: filters
             )
             if !recs.isEmpty { return recs }
-            // Recommendations exhausted — fall back to genre-matched discovery
+            // Recommendations empty — fall back respecting active filters
+            if filters.isActive {
+                let page = Int.random(in: 1...10)
+                return (try? await MovieService.shared.discover(
+                    filters: filters, page: page
+                )) ?? []
+            }
             if !topGenres.isEmpty {
                 let fallbackFilters = MovieFilters(genres: Set(topGenres.prefix(3)))
                 let page = Int.random(in: 1...10)
