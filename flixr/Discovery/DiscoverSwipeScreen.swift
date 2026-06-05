@@ -153,6 +153,18 @@ struct DiscoverSwipeScreen: View {
             adLoader.loadNext()
             Task { await deck.loadMovies(filters: newFilters, watchlistIds: library.orderedWatchlistIds, topGenres: library.topGenres) }
         }
+        .onChange(of: library.watchlistIds) { oldIds, newIds in
+            // Watchlist arrived from Firestore after the deck had already loaded
+            // with an empty excludeSet — reload once to evict any watchlist movies.
+            guard oldIds.isEmpty, !newIds.isEmpty, !deck.movies.isEmpty else { return }
+            Task {
+                await deck.loadMovies(
+                    filters: filters,
+                    watchlistIds: library.orderedWatchlistIds,
+                    topGenres: library.topGenres
+                )
+            }
+        }
     }
 
     // MARK: - Deck management
