@@ -8,6 +8,7 @@ import Testing
 // They exercise the UserDefaults key contract without requiring a live device
 // or simulator, so they run cleanly on CI.
 
+@Suite(.serialized)
 struct PermissionGateTests {
 
     // MARK: - hasBeenSeen reflects UserDefaults state
