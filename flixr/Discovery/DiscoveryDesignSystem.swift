@@ -78,23 +78,25 @@ struct PosterArt: View {
     var movie: Movie
     var width: CGFloat = 80
 
+    private var url: URL? {
+        guard let path = movie.posterPath else { return nil }
+        return TMDBImage.posterURL(path, width: 342)
+    }
+
     var body: some View {
-        if let path = movie.posterPath, let url = TMDBImage.posterURL(path, width: 342) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable().scaledToFill()
-                default:
-                    ProceduralPoster(movie: movie, width: width)
-                }
+        AsyncImage(url: url) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFill()
+            default:
+                ProceduralPoster(movie: movie, width: width)
             }
-            .frame(width: width, height: width * 1.5)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
-            .shadow(color: .black.opacity(0.55), radius: 12, y: 5)
-        } else {
-            ProceduralPoster(movie: movie, width: width)
         }
+        .id(url)
+        .frame(width: width, height: width * 1.5)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
+        .shadow(color: .black.opacity(0.55), radius: 12, y: 5)
     }
 }
 
