@@ -101,35 +101,37 @@ final class DiscoverDeck {
         topGenres: [String],
         excludeIds: Set<String>
     ) async throws -> [Movie] {
-        if !watchlistIds.isEmpty {
-            let recs = try await MovieService.shared.recommendations(
+        // 50:50 blend: fetch personalized recs and random popular simultaneously
+        if !watchlistIds.isEmpty && !filters.isActive {
+            async let recsFetch = MovieService.shared.recommendations(
                 watchlistIds: watchlistIds,
                 seenIds: Array(excludeIds),
                 count: 20,
                 filters: filters
             )
-            if !recs.isEmpty { return recs }
-            // Recommendations empty — fall back respecting active filters
-            if filters.isActive {
-                let page = Int.random(in: 1...10)
-                return (try? await MovieService.shared.discover(
-                    filters: filters, page: page
-                )) ?? []
-            }
-            if !topGenres.isEmpty {
-                let fallbackFilters = MovieFilters(genres: Set(topGenres.prefix(3)))
-                let page = Int.random(in: 1...10)
-                return (try? await MovieService.shared.discover(
-                    filters: fallbackFilters, page: page
-                )) ?? []
-            }
+            let randomPage = Int.random(in: 1...20)
+            async let popularFetch = MovieService.shared.fetchPopular(page: randomPage)
+
+            let recs    = (try? await recsFetch)    ?? []
+            let popular = (try? await popularFetch) ?? []
+
+            let recsFiltered    = recs.filter    { !excludeIds.contains($0.id) }
+            let recsIds         = Set(recsFiltered.map(\.id))
+            let popularFiltered = popular.filter { !excludeIds.contains($0.id) && !recsIds.contains($0.id) }
+
+            let combined = recsFiltered + popularFiltered
+            if !combined.isEmpty { return combined }
+            // Both empty — fall through to single-source paths below
         }
+
+        // Explicit filters active: use discover endpoint only
         if filters.isActive {
             let page = (movies.count / 20) + 1
             return try await MovieService.shared.discover(filters: filters, page: page)
-        } else {
-            let page = Int.random(in: 1...20)
-            return ((try? await MovieService.shared.fetchPopular(page: page)) ?? []).shuffled()
         }
+
+        // No watchlist yet: random popular
+        let page = Int.random(in: 1...20)
+        return ((try? await MovieService.shared.fetchPopular(page: page)) ?? []).shuffled()
     }
 }
