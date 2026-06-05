@@ -1,4 +1,5 @@
 import AppTrackingTransparency
+import FirebaseAnalytics
 import SwiftUI
 import UserNotifications
 
@@ -139,7 +140,8 @@ struct PermissionGateView: View {
         defer { isRequesting = false }
 
         if step == .att {
-            await ATTrackingManager.requestTrackingAuthorization()
+            let status = await ATTrackingManager.requestTrackingAuthorization()
+            Analytics.logAttConsent(status)
         } else {
             let center = UNUserNotificationCenter.current()
             let settings = await center.notificationSettings()
