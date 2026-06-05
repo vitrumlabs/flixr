@@ -1,3 +1,4 @@
+import AppTrackingTransparency
 import FirebaseAnalytics
 
 // Typed wrappers around Analytics.logEvent so call sites stay clean and
@@ -67,5 +68,18 @@ extension Analytics {
 
     static func logShuffleTapped() {
         logEvent("shuffle_triggered", parameters: nil)
+    }
+
+    static func logAttConsent(_ status: ATTrackingManager.AuthorizationStatus) {
+        let label: String
+        switch status {
+        case .authorized:    label = "authorized"
+        case .denied:        label = "denied"
+        case .restricted:    label = "restricted"
+        case .notDetermined: label = "not_determined"
+        @unknown default:    label = "unknown"
+        }
+        setUserProperty(label, forName: "att_consent_status")
+        logEvent("att_consent", parameters: ["status": label])
     }
 }
