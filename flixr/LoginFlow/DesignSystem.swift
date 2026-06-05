@@ -219,6 +219,7 @@ struct FlxInput: View {
                 Group {
                     if isSecure {
                         SecureField(placeholder, text: $text)
+                            .textContentType(.oneTimeCode)
                     } else {
                         TextField(placeholder, text: $text)
                             .keyboardType(keyboardType)
