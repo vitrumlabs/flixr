@@ -7,6 +7,7 @@ struct MovieDetailView: View {
     var onClose: () -> Void
 
     @Environment(\.openURL) private var openURL
+    @Environment(UserLibrary.self) private var library
     @State private var detail: Movie? = nil
     @State private var isFetching = false
     @State private var watchProviders: [WatchProvider] = []
@@ -177,20 +178,42 @@ struct MovieDetailView: View {
     }
 
     private var actionButtons: some View {
-        Button(action: openTrailer) {
-            HStack(spacing: 8) {
-                Image(systemName: "play.fill").font(.system(size: 14))
-                Text("Watch trailer").font(.system(size: 15, weight: .semibold))
+        HStack(spacing: 10) {
+            Button(action: openTrailer) {
+                HStack(spacing: 8) {
+                    Image(systemName: "play.fill").font(.system(size: 14))
+                    Text("Watch trailer").font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 15)
+                .background(LinearGradient(
+                    colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
+                    startPoint: .top, endPoint: .bottom))
+                .clipShape(Capsule())
             }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 15)
-            .background(LinearGradient(
-                colors: [Color(hex: "F11823"), Color(hex: "E50914"), Color(hex: "C8060F")],
-                startPoint: .top, endPoint: .bottom))
-            .clipShape(Capsule())
+            .buttonStyle(ScaleButtonStyle(scale: 0.97))
+
+            let isSaved = library.watchlistIds.contains(displayed.id)
+            Button {
+                Task {
+                    if isSaved {
+                        await library.removeFromWatchlist(displayed)
+                    } else {
+                        await library.addToWatchlist(displayed)
+                    }
+                }
+            } label: {
+                Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 50)
+                    .padding(.vertical, 15)
+            }
+            .glassEffect(.clear.interactive(), in: .capsule)
+            .buttonStyle(ScaleButtonStyle(scale: 0.97))
+            .accessibilityLabel(isSaved ? "Remove from watchlist" : "Add to watchlist")
         }
-        .buttonStyle(ScaleButtonStyle(scale: 0.97))
     }
 
     private var metadataSection: some View {
