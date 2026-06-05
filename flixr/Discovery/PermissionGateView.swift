@@ -40,9 +40,6 @@ struct PermissionGateView: View {
 
                 actionButtons
                     .padding(.bottom, 16)
-
-                skipButton
-                    .padding(.bottom, 12)
             }
             .padding(.horizontal, 28)
             .padding(.vertical, 60)
@@ -120,16 +117,6 @@ struct PermissionGateView: View {
         ) {
             Task { await handleAllow() }
         }
-    }
-
-    @ViewBuilder
-    private var skipButton: some View {
-        Button("Not now") {
-            Task { await advance() }
-        }
-        .font(.system(size: 15, weight: .medium))
-        .foregroundColor(.fg3)
-        .frame(height: 44)
     }
 
     // MARK: Logic
