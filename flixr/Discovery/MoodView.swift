@@ -237,7 +237,7 @@ private struct MoodInputView: View {
             do {
                 let movies = try await MovieService.shared.moodSearch(query: trimmed)
                 phase = .idle
-                onSearch(movies)
+                onSearch(movies.shuffled())
             } catch {
                 phase = .error
             }
