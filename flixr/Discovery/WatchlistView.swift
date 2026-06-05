@@ -102,6 +102,19 @@ struct WatchlistView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .task(id: allSaved.map(\.id).joined()) {
+            await prefetchPosters(for: movieList)
+        }
+    }
+
+    private func prefetchPosters(for movies: [Movie]) async {
+        await withTaskGroup(of: Void.self) { group in
+            for movie in movies {
+                guard let path = movie.posterPath,
+                      let url = TMDBImage.posterURL(path, width: 342) else { continue }
+                group.addTask { _ = try? await URLSession.shared.data(from: url) }
+            }
+        }
     }
 
     private var emptyState: some View {
