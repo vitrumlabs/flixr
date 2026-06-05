@@ -288,17 +288,19 @@ struct LegalConsentFooter: View {
     @Binding var activeLegal: LegalDestination?
 
     var body: some View {
-        HStack(spacing: 0) {
-            Text("By continuing, you agree to our ")
+        VStack(spacing: 2) {
+            Text("By continuing, you agree to our")
                 .foregroundColor(.fg3)
-            Button("Terms of Use") { activeLegal = .terms }
-                .foregroundColor(.fg2)
-                .underline()
-            Text(" and ")
-                .foregroundColor(.fg3)
-            Button("Privacy Policy") { activeLegal = .privacy }
-                .foregroundColor(.fg2)
-                .underline()
+            HStack(spacing: 0) {
+                Button("Terms of Use") { activeLegal = .terms }
+                    .foregroundColor(.fg2)
+                    .underline()
+                Text(" and ")
+                    .foregroundColor(.fg3)
+                Button("Privacy Policy") { activeLegal = .privacy }
+                    .foregroundColor(.fg2)
+                    .underline()
+            }
         }
         .font(.system(size: 12))
         .buttonStyle(.plain)
