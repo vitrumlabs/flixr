@@ -40,6 +40,11 @@ struct flixrApp: App {
         #else
         AppCheck.setAppCheckProviderFactory(DeviceCheckProviderFactory())
         #endif
+        URLCache.shared = URLCache(
+            memoryCapacity: 50 * 1024 * 1024,
+            diskCapacity:  200 * 1024 * 1024,
+            diskPath: "posterCache"
+        )
         FirebaseApp.configure()
         if CommandLine.arguments.contains("UI_TESTING") {
             try? Auth.auth().signOut()

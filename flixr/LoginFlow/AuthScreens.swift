@@ -1,4 +1,5 @@
 import SwiftUI
+import SafariServices
 
 // MARK: - Sign In
 
@@ -13,6 +14,7 @@ struct SignInScreen: View {
     @State private var email: String
     @State private var password = ""
     @State private var showPassword = false
+    @State private var activeLegal: LegalDestination? = nil
 
     init(
         go: @escaping (LoginScreen) -> Void,
@@ -101,11 +103,17 @@ struct SignInScreen: View {
                         go(.signinLoading)
                     }
 
-                    Spacer(minLength: 40)
+                    Spacer().frame(height: 32)
+                    LegalConsentFooter(activeLegal: $activeLegal)
+                    Spacer(minLength: 24)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
                 .padding(.bottom, 32)
+            }
+            .sheet(item: $activeLegal) { dest in
+                SafariView(url: dest.url)
+                    .ignoresSafeArea()
             }
         }
     }
@@ -126,6 +134,7 @@ struct SignUpScreen: View {
     @State private var email: String
     @State private var password = ""
     @State private var showPassword = false
+    @State private var activeLegal: LegalDestination? = nil
 
     init(
         go: @escaping (LoginScreen) -> Void,
@@ -217,11 +226,17 @@ struct SignUpScreen: View {
                         go(emailExists ? .signup : .signupLoading)
                     }
 
-                    Spacer(minLength: 40)
+                    Spacer().frame(height: 32)
+                    LegalConsentFooter(activeLegal: $activeLegal)
+                    Spacer(minLength: 24)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
                 .padding(.bottom, 32)
+            }
+            .sheet(item: $activeLegal) { dest in
+                SafariView(url: dest.url)
+                    .ignoresSafeArea()
             }
         }
     }
@@ -264,5 +279,46 @@ struct SocialAuthButtons: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Legal consent footer
+
+struct LegalConsentFooter: View {
+    @Binding var activeLegal: LegalDestination?
+
+    var body: some View {
+        Text(attributedFooter)
+            .font(.system(size: 12))
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .environment(\.openURL, OpenURLAction { url in
+                switch url {
+                case LegalDestination.terms.url:   activeLegal = .terms
+                case LegalDestination.privacy.url: activeLegal = .privacy
+                default: break
+                }
+                return .handled
+            })
+    }
+
+    private var attributedFooter: AttributedString {
+        var base = AttributedString("By continuing, you agree to our ")
+        base.foregroundColor = Color.fg3
+
+        var terms = AttributedString("Terms of Use")
+        terms.foregroundColor = Color.fg2
+        terms.underlineStyle = .single
+        terms.link = LegalDestination.terms.url
+
+        var and = AttributedString(" and ")
+        and.foregroundColor = Color.fg3
+
+        var privacy = AttributedString("Privacy Policy")
+        privacy.foregroundColor = Color.fg2
+        privacy.underlineStyle = .single
+        privacy.link = LegalDestination.privacy.url
+
+        return base + terms + and + privacy
     }
 }

@@ -69,7 +69,7 @@ struct DiscoverSwipeScreen: View {
                             errorCard(width: geo.size.width - 28, maxHeight: geo.size.height)
                         } else if currentItems.isEmpty {
                             loadingCard(width: geo.size.width - 28, maxHeight: geo.size.height)
-                                .task { await deck.refillIfNeeded(filters: filters) }
+                                .task { await deck.refillIfNeeded(filters: filters, watchlistIds: library.orderedWatchlistIds, topGenres: library.topGenres) }
                         } else {
                             CardStackView(
                                 deck: currentItems,
@@ -80,7 +80,14 @@ struct DiscoverSwipeScreen: View {
                                 onLike: { item in
                                     advance()
                                     if case .movie(let movie) = item {
-                                        Task { await library.addToWatchlist(movie) }
+                                        Task {
+                                            await library.addToWatchlist(movie)
+                                            await deck.onLiked(
+                                                filters: filters,
+                                                watchlistIds: library.orderedWatchlistIds,
+                                                topGenres: library.topGenres
+                                            )
+                                        }
                                     }
                                 },
                                 onSkip: { item in
@@ -138,13 +145,25 @@ struct DiscoverSwipeScreen: View {
             // navigation so adLoader is fresh even when the deck has movies.
             if adLoader.ad == nil { adLoader.loadNext() }
             if deck.movies.isEmpty {
-                await deck.loadMovies(filters: filters)
+                await deck.loadMovies(filters: filters, watchlistIds: library.orderedWatchlistIds, topGenres: library.topGenres)
             }
         }
         .onChange(of: filters) { _, newFilters in
             cardFlyDirection = nil
             adLoader.loadNext()
-            Task { await deck.loadMovies(filters: newFilters) }
+            Task { await deck.loadMovies(filters: newFilters, watchlistIds: library.orderedWatchlistIds, topGenres: library.topGenres) }
+        }
+        .onChange(of: library.watchlistIds) { oldIds, newIds in
+            // Watchlist arrived from Firestore after the deck had already loaded
+            // with an empty excludeSet — reload once to evict any watchlist movies.
+            guard oldIds.isEmpty, !newIds.isEmpty, !deck.movies.isEmpty else { return }
+            Task {
+                await deck.loadMovies(
+                    filters: filters,
+                    watchlistIds: library.orderedWatchlistIds,
+                    topGenres: library.topGenres
+                )
+            }
         }
     }
 
@@ -169,7 +188,7 @@ struct DiscoverSwipeScreen: View {
         if wasAd || skippedUnloadedAd { adLoader.loadNext() }
 
         let moviesLeft = currentItems.filter { if case .movie = $0 { return true }; return false }.count
-        if moviesLeft < 15 { Task { await deck.refillIfNeeded(filters: filters) } }
+        if moviesLeft < 6 { Task { await deck.refillIfNeeded(filters: filters, watchlistIds: library.orderedWatchlistIds, topGenres: library.topGenres) } }
     }
 
     // MARK: - State cards

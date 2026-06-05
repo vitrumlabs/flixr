@@ -62,6 +62,18 @@ struct WatchlistView: View {
                             .frame(width: 44, height: 44)
                     }
                     .accessibilityLabel("Sort watchlist")
+                    .confirmationDialog(
+                        "Clear Watchlist",
+                        isPresented: $showClearConfirm,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Clear All", role: .destructive) {
+                            Task { await library.clearWatchlist() }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This will remove all \(allSaved.count) title\(allSaved.count == 1 ? "" : "s") from your watchlist.")
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -90,18 +102,6 @@ struct WatchlistView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .confirmationDialog(
-            "Clear Watchlist",
-            isPresented: $showClearConfirm,
-            titleVisibility: .visible
-        ) {
-            Button("Clear All", role: .destructive) {
-                Task { await library.clearWatchlist() }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will remove all \(allSaved.count) title\(allSaved.count == 1 ? "" : "s") from your watchlist.")
-        }
     }
 
     private var emptyState: some View {

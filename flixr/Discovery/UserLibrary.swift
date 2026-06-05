@@ -71,7 +71,7 @@ struct MovieSnapshot {
 struct NotificationPrefs {
     var newRecommendations: Bool = true
     var watchlistReminders: Bool = true
-    var weeklyDigest:       Bool = false
+    var weeklyDigest:       Bool = true
 }
 
 // MARK: - UserLibrary
@@ -91,6 +91,9 @@ final class UserLibrary {
     }
 
     var watchlistIds: Set<String> { Set(watchlist.map(\.id)) }
+
+    /// Watchlist IDs ordered most-recently-added first, for use as recommendation seeds.
+    var orderedWatchlistIds: [String] { watchlist.reversed().map(\.id) }
 
     private let db = Firestore.firestore()
     private var uid: String? { Auth.auth().currentUser?.uid }

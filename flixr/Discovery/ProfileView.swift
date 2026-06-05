@@ -378,22 +378,22 @@ private struct DeleteAccountView: View {
 
 // MARK: - Legal destination
 
-private enum LegalDestination: String, Identifiable {
+enum LegalDestination: String, Identifiable {
     case terms, privacy
 
     var id: String { rawValue }
 
     var url: URL {
         switch self {
-        case .terms:   return URL(string: "https://vitrumlabs.com/terms")!
-        case .privacy: return URL(string: "https://vitrumlabs.com/privacy")!
+        case .terms:   return URL(string: "https://vitrumlabs.com/flixr-terms.html")!
+        case .privacy: return URL(string: "https://vitrumlabs.com/flixr-privacy.html")!
         }
     }
 }
 
 // MARK: - Safari sheet
 
-private struct SafariView: UIViewControllerRepresentable {
+struct SafariView: UIViewControllerRepresentable {
     let url: URL
 
     func makeUIViewController(context: Context) -> SFSafariViewController {
