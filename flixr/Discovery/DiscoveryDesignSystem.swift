@@ -88,8 +88,11 @@ struct PosterArt: View {
             switch phase {
             case .success(let image):
                 image.resizable().scaledToFill()
-            default:
+                    .transition(.opacity.animation(.easeIn(duration: 0.2)))
+            case .failure:
                 ProceduralPoster(movie: movie, width: width)
+            default:
+                Color.white.opacity(0.06)
             }
         }
         .id(url)
