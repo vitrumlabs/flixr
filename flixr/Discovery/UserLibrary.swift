@@ -71,7 +71,7 @@ struct MovieSnapshot {
 struct NotificationPrefs {
     var newRecommendations: Bool = true
     var watchlistReminders: Bool = true
-    var weeklyDigest:       Bool = false
+    var weeklyDigest:       Bool = true
 }
 
 // MARK: - UserLibrary

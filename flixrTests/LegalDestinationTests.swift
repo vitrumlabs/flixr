@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import flixr
 
@@ -6,11 +7,11 @@ import Testing
 struct LegalDestinationTests {
 
     @Test func termsURLIsCorrect() {
-        #expect(LegalDestination.terms.url == URL(string: "https://vitrumlabs.com/terms"))
+        #expect(LegalDestination.terms.url == URL(string: "https://vitrumlabs.com/flixr-terms.html"))
     }
 
     @Test func privacyURLIsCorrect() {
-        #expect(LegalDestination.privacy.url == URL(string: "https://vitrumlabs.com/privacy"))
+        #expect(LegalDestination.privacy.url == URL(string: "https://vitrumlabs.com/flixr-privacy.html"))
     }
 
     @Test func termsIdIsStable() {
