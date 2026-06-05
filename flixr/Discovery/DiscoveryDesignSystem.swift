@@ -84,22 +84,23 @@ struct PosterArt: View {
     }
 
     var body: some View {
-        AsyncImage(url: url) { phase in
-            switch phase {
-            case .success(let image):
-                image.resizable().scaledToFill()
-                    .transition(.opacity.animation(.easeIn(duration: 0.2)))
-            case .failure:
-                ProceduralPoster(movie: movie, width: width)
-            default:
+        Group {
+            if let url, let img = PosterCache.shared.image(for: url) {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+                    .transition(.opacity.animation(.easeIn(duration: 0.15)))
+            } else if url != nil {
                 Color.white.opacity(0.06)
+            } else {
+                ProceduralPoster(movie: movie, width: width)
             }
         }
-        .id(url)
         .frame(width: width, height: width * 1.5)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.white.opacity(0.06), lineWidth: 1))
         .shadow(color: .black.opacity(0.55), radius: 12, y: 5)
+        .onAppear { if let u = url { PosterCache.shared.load(url: u) } }
     }
 }
 
