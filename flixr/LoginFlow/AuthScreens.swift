@@ -288,23 +288,37 @@ struct LegalConsentFooter: View {
     @Binding var activeLegal: LegalDestination?
 
     var body: some View {
-        VStack(spacing: 2) {
-            Text("By continuing, you agree to our")
-                .foregroundColor(.fg3)
-            HStack(spacing: 0) {
-                Button("Terms of Use") { activeLegal = .terms }
-                    .foregroundColor(.fg2)
-                    .underline()
-                Text(" and ")
-                    .foregroundColor(.fg3)
-                Button("Privacy Policy") { activeLegal = .privacy }
-                    .foregroundColor(.fg2)
-                    .underline()
-            }
-        }
-        .font(.system(size: 12))
-        .buttonStyle(.plain)
-        .multilineTextAlignment(.center)
-        .frame(maxWidth: .infinity)
+        Text(attributedFooter)
+            .font(.system(size: 12))
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .environment(\.openURL, OpenURLAction { url in
+                switch url {
+                case LegalDestination.terms.url:   activeLegal = .terms
+                case LegalDestination.privacy.url: activeLegal = .privacy
+                default: break
+                }
+                return .handled
+            })
+    }
+
+    private var attributedFooter: AttributedString {
+        var base = AttributedString("By continuing, you agree to our ")
+        base.foregroundColor = Color.fg3
+
+        var terms = AttributedString("Terms of Use")
+        terms.foregroundColor = Color.fg2
+        terms.underlineStyle = .single
+        terms.link = LegalDestination.terms.url
+
+        var and = AttributedString(" and ")
+        and.foregroundColor = Color.fg3
+
+        var privacy = AttributedString("Privacy Policy")
+        privacy.foregroundColor = Color.fg2
+        privacy.underlineStyle = .single
+        privacy.link = LegalDestination.privacy.url
+
+        return base + terms + and + privacy
     }
 }
