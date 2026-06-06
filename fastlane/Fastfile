@@ -18,6 +18,8 @@ platform :ios do
     # Create a named keychain with a known password so `security set-key-partition-list`
     # can set the ACL after match imports the distribution cert (required on macOS 12+).
     if is_ci
+      # Delete any stale keychain from a previous run on this runner before creating fresh.
+      sh("security delete-keychain build.keychain 2>/dev/null || true")
       create_keychain(
         name: "build.keychain",
         password: ENV["MATCH_PASSWORD"],
