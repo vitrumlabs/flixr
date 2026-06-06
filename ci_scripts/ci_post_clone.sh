@@ -23,4 +23,4 @@ if ! command -v pod >/dev/null 2>&1; then
     gem install cocoapods --no-document
 fi
 
-pod install --repo-update
+pod install
