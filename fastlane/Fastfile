@@ -36,12 +36,14 @@ platform :ios do
       key_filepath: ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"]
     )
 
-    # Sync App Store distribution cert + provisioning profile
+    # Sync App Store distribution cert + provisioning profile.
+    # keychain_password is NOT passed: match-stored .p12s have empty export password;
+    # passing MATCH_PASSWORD here would make `security import -P MATCH_PASSWORD` fail.
+    # The keychain is already unlocked above via create_keychain.
     match(
       type: "appstore",
       readonly: true,
-      keychain_name: is_ci ? "build.keychain" : nil,
-      keychain_password: is_ci ? ENV["MATCH_PASSWORD"] : nil
+      keychain_name: is_ci ? "build.keychain" : nil
     )
 
     # Increment build number to current timestamp (avoids TestFlight rejection for duplicate build)
