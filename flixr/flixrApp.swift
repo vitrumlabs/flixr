@@ -46,6 +46,20 @@ struct flixrApp: App {
             diskPath: "posterCache"
         )
         FirebaseApp.configure()
+        if let clientID = FirebaseApp.app()?.options.clientID {
+            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+        }
+        #if DEBUG
+        if let apiKey = FirebaseApp.app()?.options.apiKey {
+            GIDSignIn.sharedInstance.configureDebugProvider(withAPIKey: apiKey) { error in
+                if let error { print("[GID AppCheck] debug provider error: \(error)") }
+            }
+        }
+        #else
+        GIDSignIn.sharedInstance.configure { error in
+            if let error { print("[GID AppCheck] configure error: \(error)") }
+        }
+        #endif
         if CommandLine.arguments.contains("UI_TESTING") {
             try? Auth.auth().signOut()
             GIDSignIn.sharedInstance.signOut()
