@@ -1,3 +1,15 @@
-Welcome to Flixr — our first release.
+What's new in 1.1
 
-Discover movies by mood, swipe to save, and get personalised recommendations delivered to you.
+New
+• Bookmark any movie directly from its detail screen to save it instantly to your Watchlist
+• Your discover deck now blends personalised recommendations with fresh picks so you always find something new
+• Mood results are shuffled every session for more variety
+
+Improvements
+• Accepting or declining the location permission prompt is now simpler
+
+Bug Fixes
+• Watchlist posters now load reliably after scrolling
+• Discover deck no longer shows films already in your Watchlist at startup
+• "Clear Watchlist" confirmation dialog displays correctly on all devices
+• Minor stability and performance improvements
