@@ -88,9 +88,6 @@ class AuthManager: NSObject {
         isLoading = true
         authError = nil
         do {
-            guard let clientID = FirebaseApp.app()?.options.clientID else {
-                throw AuthError.googleNotConfigured
-            }
             let rootVC = try await MainActor.run {
                 guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                       let rootVC = scene.windows.first?.rootViewController
@@ -98,7 +95,9 @@ class AuthManager: NSObject {
                 return rootVC
             }
 
-            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+            guard GIDSignIn.sharedInstance.configuration != nil else {
+                throw AuthError.googleNotConfigured
+            }
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootVC)
 
             guard let idToken = result.user.idToken?.tokenString else {
