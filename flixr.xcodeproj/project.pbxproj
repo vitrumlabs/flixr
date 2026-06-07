@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1CDDF363B65A665EA5B9A741 /* Pods_flixr.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD639FEF12B150E851EFBBE5 /* Pods_flixr.framework */; };
+		F608E0F982B45E95E3291176 /* Pods_flixrTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B65271E18E6972850E03FB38 /* Pods_flixrTests.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +34,9 @@
 		46B640F22FACA4C400E34B1A /* flixrTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = flixrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		46B640FC2FACA4C400E34B1A /* flixrUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = flixrUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F43225FB9B57A859DA7DC34 /* Pods-flixr.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-flixr.release.xcconfig"; path = "Target Support Files/Pods-flixr/Pods-flixr.release.xcconfig"; sourceTree = "<group>"; };
+		893CBFC4A1292957E94BF4CA /* Pods-flixrTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-flixrTests.debug.xcconfig"; path = "Target Support Files/Pods-flixrTests/Pods-flixrTests.debug.xcconfig"; sourceTree = "<group>"; };
+		A7F7327DF2DB8FFA960A07DE /* Pods-flixrTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-flixrTests.release.xcconfig"; path = "Target Support Files/Pods-flixrTests/Pods-flixrTests.release.xcconfig"; sourceTree = "<group>"; };
+		B65271E18E6972850E03FB38 /* Pods_flixrTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_flixrTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BD639FEF12B150E851EFBBE5 /* Pods_flixr.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_flixr.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -57,11 +61,15 @@
 		};
 		46B640F52FACA4C400E34B1A /* flixrTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = flixrTests;
 			sourceTree = "<group>";
 		};
 		46B640FF2FACA4C400E34B1A /* flixrUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = flixrUITests;
 			sourceTree = "<group>";
 		};
@@ -80,6 +88,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F608E0F982B45E95E3291176 /* Pods_flixrTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,6 +106,7 @@
 			isa = PBXGroup;
 			children = (
 				BD639FEF12B150E851EFBBE5 /* Pods_flixr.framework */,
+				B65271E18E6972850E03FB38 /* Pods_flixrTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -106,6 +116,8 @@
 			children = (
 				2C65BE7D9B37AE0B9CB49D54 /* Pods-flixr.debug.xcconfig */,
 				7F43225FB9B57A859DA7DC34 /* Pods-flixr.release.xcconfig */,
+				893CBFC4A1292957E94BF4CA /* Pods-flixrTests.debug.xcconfig */,
+				A7F7327DF2DB8FFA960A07DE /* Pods-flixrTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -164,6 +176,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 46B641092FACA4C400E34B1A /* Build configuration list for PBXNativeTarget "flixrTests" */;
 			buildPhases = (
+				7BBFB12C42E523595B7A76CD /* [CP] Check Pods Manifest.lock */,
 				46B640EE2FACA4C400E34B1A /* Sources */,
 				46B640EF2FACA4C400E34B1A /* Frameworks */,
 				46B640F02FACA4C400E34B1A /* Resources */,
@@ -312,6 +325,28 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/FirebaseCrashlytics/run\"\n";
 		};
+		7BBFB12C42E523595B7A76CD /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-flixrTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 		8C25F26797B32F149CA5A1A1 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -320,13 +355,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -341,13 +372,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-flixr/Pods-flixr-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -561,7 +588,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = vitrumlabs.flixr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -602,7 +629,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = vitrumlabs.flixr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -617,6 +644,7 @@
 		};
 		46B6410A2FACA4C400E34B1A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 893CBFC4A1292957E94BF4CA /* Pods-flixrTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -624,7 +652,7 @@
 				DEVELOPMENT_TEAM = Z2FJU6P53W;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = vitrumlabs.flixrTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -639,6 +667,7 @@
 		};
 		46B6410B2FACA4C400E34B1A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A7F7327DF2DB8FFA960A07DE /* Pods-flixrTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -646,7 +675,7 @@
 				DEVELOPMENT_TEAM = Z2FJU6P53W;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = vitrumlabs.flixrTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -666,7 +695,7 @@
 				CURRENT_PROJECT_VERSION = 202605221527;
 				DEVELOPMENT_TEAM = Z2FJU6P53W;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = vitrumlabs.flixrUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -686,7 +715,7 @@
 				CURRENT_PROJECT_VERSION = 202605221527;
 				DEVELOPMENT_TEAM = Z2FJU6P53W;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = vitrumlabs.flixrUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
